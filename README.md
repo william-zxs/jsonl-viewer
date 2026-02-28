@@ -1,24 +1,28 @@
 # JSONL Viewer
 
-一个基于 React + Vite 的前端 JSONL 查看器，支持按行展开和树形折叠，方便分析日志与结构化数据。
+[中文文档 (Chinese)](./README.zh-CN.md)
 
-## 功能
+A browser-based JSONL viewer built with React + Vite, designed to help analyze agent-generated JSONL logs.
 
-- 拖拽上传 `jsonl` 文件（也支持点击选择）
-- 按行展示解析结果（`OK` / `ERROR`）
-- 单行展开后树形浏览 JSON，节点可折叠/展开
-- 统计总行数、成功行数、失败行数
-- `All / OK / ERROR` 快速筛选
-- 分页展示（每页 200 行）与“折叠当前页全部”
+## Features
 
-## 本地运行
+- Drag and drop a `jsonl` file (or click to choose one)
+- Parse and render entries line by line with `OK` / `ERROR` status
+- Expand a line to inspect JSON as a collapsible tree
+- Expand/collapse all lines on the current page
+- Expand/collapse all JSON tree nodes within a single line
+- Summary stats for total / success / failed lines
+- Quick filters: `All / OK / ERROR`
+- Pagination (200 lines per page)
+
+## Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-## 测试
+## Test
 
 ```bash
 npm test
