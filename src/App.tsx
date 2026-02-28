@@ -80,6 +80,16 @@ export default function App() {
     });
   };
 
+  const expandCurrentPage = () => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    const pageLineNumbers = filteredLineNumbers.slice(start, start + PAGE_SIZE);
+    setExpandedLineSet((prev) => {
+      const next = new Set(prev);
+      pageLineNumbers.forEach((lineNumber) => next.add(lineNumber));
+      return next;
+    });
+  };
+
   return (
     <div className="app-shell">
       <header className="top-panel">
@@ -152,6 +162,7 @@ export default function App() {
         expandedLineSet={expandedLineSet}
         onToggleLine={toggleLine}
         onPageChange={setCurrentPage}
+        onExpandCurrentPage={expandCurrentPage}
         onCollapseCurrentPage={collapseCurrentPage}
       />
     </div>

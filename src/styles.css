@@ -155,6 +155,11 @@ body {
   color: #41535f;
 }
 
+.toolbar-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
 .ghost-btn {
   border: 1px solid #527782;
   border-radius: 8px;

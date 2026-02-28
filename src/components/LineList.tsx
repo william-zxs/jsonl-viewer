@@ -11,6 +11,7 @@ type LineListProps = {
   expandedLineSet: Set<number>;
   onToggleLine: (lineNumber: number) => void;
   onPageChange: (page: number) => void;
+  onExpandCurrentPage: () => void;
   onCollapseCurrentPage: () => void;
 };
 
@@ -22,6 +23,7 @@ export default function LineList({
   expandedLineSet,
   onToggleLine,
   onPageChange,
+  onExpandCurrentPage,
   onCollapseCurrentPage
 }: LineListProps) {
   const filtered = lines.filter((line) => {
@@ -45,9 +47,14 @@ export default function LineList({
         <span>
           当前显示 {pageItems.length} / {filtered.length}
         </span>
-        <button type="button" className="ghost-btn" onClick={onCollapseCurrentPage}>
-          折叠当前页全部
-        </button>
+        <div className="toolbar-actions">
+          <button type="button" className="ghost-btn" onClick={onExpandCurrentPage}>
+            展开当前页全部
+          </button>
+          <button type="button" className="ghost-btn" onClick={onCollapseCurrentPage}>
+            折叠当前页全部
+          </button>
+        </div>
       </div>
 
       {pageItems.length === 0 && <div className="empty-state">暂无数据</div>}
