@@ -1,3 +1,4 @@
+import { useState } from "react";
 import JsonTree from "./JsonTree";
 import type { ParsedLine } from "../lib/jsonl";
 
@@ -26,6 +27,8 @@ function summarize(parsed: unknown | null, error: string | null): string {
 export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
   const status = line.error ? "ERROR" : "OK";
   const summary = summarize(line.parsed, line.error);
+  const [controlVersion, setControlVersion] = useState(0);
+  const [controlMode, setControlMode] = useState<"expand" | "collapse" | null>(null);
 
   return (
     <article className={`line-item ${line.error ? "line-error" : ""}`}>
@@ -48,7 +51,31 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
               <pre className="raw-line">{line.raw}</pre>
             </>
           ) : (
-            <JsonTree data={line.parsed} />
+            <>
+              <div className="line-body-actions">
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={() => {
+                    setControlMode("expand");
+                    setControlVersion((v) => v + 1);
+                  }}
+                >
+                  展开该行全部
+                </button>
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={() => {
+                    setControlMode("collapse");
+                    setControlVersion((v) => v + 1);
+                  }}
+                >
+                  折叠该行全部
+                </button>
+              </div>
+              <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} />
+            </>
           )}
         </div>
       )}

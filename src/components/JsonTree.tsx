@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type JsonTreeProps = {
   data: unknown;
   name?: string;
   depth?: number;
   defaultExpandedDepth?: number;
+  controlVersion?: number;
+  controlMode?: "expand" | "collapse" | null;
 };
 
 function formatPrimitive(value: unknown): string {
@@ -37,11 +39,26 @@ export default function JsonTree({
   data,
   name,
   depth = 0,
-  defaultExpandedDepth = 1
+  defaultExpandedDepth = 1,
+  controlVersion = 0,
+  controlMode = null
 }: JsonTreeProps) {
   const isObject = typeof data === "object" && data !== null;
-  const initialOpen = depth < defaultExpandedDepth;
+  const initialOpen =
+    controlMode === "expand" ? true : controlMode === "collapse" ? false : depth < defaultExpandedDepth;
   const [isOpen, setIsOpen] = useState(initialOpen);
+  const prevControlVersion = useRef(controlVersion);
+
+  useEffect(() => {
+    if (controlVersion !== prevControlVersion.current) {
+      if (controlMode === "expand") {
+        setIsOpen(true);
+      } else if (controlMode === "collapse") {
+        setIsOpen(false);
+      }
+      prevControlVersion.current = controlVersion;
+    }
+  }, [controlMode, controlVersion]);
 
   const entries = useMemo(() => {
     if (!isObject) {
@@ -91,6 +108,8 @@ export default function JsonTree({
             name={key}
             depth={depth + 1}
             defaultExpandedDepth={defaultExpandedDepth}
+            controlVersion={controlVersion}
+            controlMode={controlMode}
           />
         ))}
 

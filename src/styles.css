@@ -229,6 +229,12 @@ body {
   overflow: auto;
 }
 
+.line-body-actions {
+  display: flex;
+  gap: 0.45rem;
+  margin: 0 0 0.55rem;
+}
+
 .error-text {
   margin: 0 0 0.5rem;
   color: #8a1f1f;

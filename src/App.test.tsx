@@ -27,7 +27,7 @@ describe("App", () => {
     expect(screen.getByTestId("stat-failed")).toHaveTextContent("1");
 
     fireEvent.click(screen.getByRole("button", { name: /第 1 行/i }));
-    expect(screen.getByText("a:")).toBeInTheDocument();
+    expect(screen.getByText(/a:/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "ERROR" }));
     expect(screen.getByText(/第 2 行/)).toBeInTheDocument();
@@ -46,13 +46,34 @@ describe("App", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "展开当前页全部" }));
-    expect(screen.getByText("a:")).toBeInTheDocument();
-    expect(screen.getByText("b:")).toBeInTheDocument();
+    expect(screen.getByText(/a:/)).toBeInTheDocument();
+    expect(screen.getByText(/b:/)).toBeInTheDocument();
     expect(screen.getByText(/错误:/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "折叠当前页全部" }));
-    expect(screen.queryByText("a:")).not.toBeInTheDocument();
-    expect(screen.queryByText("b:")).not.toBeInTheDocument();
+    expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/b:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/错误:/)).not.toBeInTheDocument();
+  });
+
+  it("支持单行内 JSON 树全部展开和全部折叠", async () => {
+    render(<App />);
+
+    const input = screen.getByLabelText("选择 JSONL 文件");
+    const file = makeJsonlFile(`{"a":{"b":{"c":1}}}\n{"x":2}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /第 1 行/i }));
+    expect(screen.queryByText(/c:/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "展开该行全部" }));
+    expect(screen.getByText(/c:/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "折叠该行全部" }));
+    expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
   });
 });
