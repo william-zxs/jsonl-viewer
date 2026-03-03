@@ -17,6 +17,11 @@ body {
   min-height: 100vh;
 }
 
+body.modal-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
 #root {
   min-height: 100vh;
 }
@@ -244,6 +249,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  overscroll-behavior: contain;
 }
 
 .line-fullscreen-panel {
@@ -277,6 +283,7 @@ body {
   flex: 1;
   overflow: auto;
   padding: 0.7rem 0.8rem;
+  overscroll-behavior: contain;
 }
 
 .error-text {

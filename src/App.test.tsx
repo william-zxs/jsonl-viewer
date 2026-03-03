@@ -93,6 +93,7 @@ describe("App", () => {
 
     const dialog = screen.getByRole("dialog", { name: "第 1 行 JSON 全屏" });
     expect(dialog).toBeInTheDocument();
+    expect(document.body).toHaveClass("modal-open");
     expect(within(dialog).getByRole("button", { name: "展开该行全部" })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "折叠该行全部" })).toBeInTheDocument();
     expect(within(dialog).getByText(/a:/)).toBeInTheDocument();
@@ -106,11 +107,13 @@ describe("App", () => {
 
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭全屏" }));
     expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
+    expect(document.body).not.toHaveClass("modal-open");
 
     fireEvent.click(screen.getByRole("button", { name: "全屏" }));
     expect(screen.getByRole("dialog", { name: "第 1 行 JSON 全屏" })).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
+    expect(document.body).not.toHaveClass("modal-open");
   });
 });

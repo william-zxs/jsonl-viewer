@@ -35,13 +35,21 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
     if (!isFullscreen) {
       return;
     }
+
+    document.body.classList.add("modal-open");
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsFullscreen(false);
       }
     };
+
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.classList.remove("modal-open");
+    };
   }, [isFullscreen]);
 
   return (
