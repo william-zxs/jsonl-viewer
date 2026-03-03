@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import App from "./App";
 
@@ -75,5 +75,33 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "折叠该行全部" }));
     expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
+  });
+
+  it("支持单行 JSON 块全屏展示并可关闭", async () => {
+    render(<App />);
+
+    const input = screen.getByLabelText("选择 JSONL 文件");
+    const file = makeJsonlFile(`{"a":{"b":1}}\n{"x":2}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /第 1 行/i }));
+    fireEvent.click(screen.getByRole("button", { name: "全屏" }));
+
+    const dialog = screen.getByRole("dialog", { name: "第 1 行 JSON 全屏" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText(/a:/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "关闭全屏" }));
+    expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "全屏" }));
+    expect(screen.getByRole("dialog", { name: "第 1 行 JSON 全屏" })).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
   });
 });

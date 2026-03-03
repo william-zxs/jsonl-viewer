@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import JsonTree from "./JsonTree";
 import type { ParsedLine } from "../lib/jsonl";
 
@@ -29,6 +29,20 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
   const summary = summarize(line.parsed, line.error);
   const [controlVersion, setControlVersion] = useState(0);
   const [controlMode, setControlMode] = useState<"expand" | "collapse" | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!isFullscreen) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isFullscreen]);
 
   return (
     <article className={`line-item ${line.error ? "line-error" : ""}`}>
@@ -73,8 +87,32 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
                 >
                   折叠该行全部
                 </button>
+                <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(true)}>
+                  全屏
+                </button>
               </div>
               <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} />
+              {isFullscreen && (
+                <div
+                  className="line-fullscreen-overlay"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`第 ${line.lineNumber} 行 JSON 全屏`}
+                  onClick={() => setIsFullscreen(false)}
+                >
+                  <div className="line-fullscreen-panel" onClick={(event) => event.stopPropagation()}>
+                    <div className="line-fullscreen-header">
+                      <strong>第 {line.lineNumber} 行 JSON</strong>
+                      <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(false)}>
+                        关闭全屏
+                      </button>
+                    </div>
+                    <div className="line-fullscreen-content">
+                      <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
