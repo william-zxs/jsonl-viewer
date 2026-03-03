@@ -116,4 +116,30 @@ describe("App", () => {
     expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
     expect(document.body).not.toHaveClass("modal-open");
   });
+
+  it("支持全文检索并可与状态过滤组合", async () => {
+    render(<App />);
+
+    const input = screen.getByLabelText("选择 JSONL 文件");
+    const file = makeJsonlFile(`{"event":"login","user":"alice"}\nnot-json-line\n{"event":"logout","user":"bob"}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("3");
+    });
+
+    const searchInput = screen.getByRole("searchbox", { name: "全文检索" });
+    fireEvent.change(searchInput, { target: { value: "logout" } });
+    expect(screen.getByText(/第 3 行/)).toBeInTheDocument();
+    expect(screen.queryByText(/第 1 行/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/第 2 行/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "ERROR" }));
+    expect(screen.queryByText(/第 3 行/)).not.toBeInTheDocument();
+    expect(screen.getByText("暂无数据")).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: "json" } });
+    expect(screen.getByText(/第 2 行/)).toBeInTheDocument();
+    expect(screen.queryByText(/第 1 行/)).not.toBeInTheDocument();
+  });
 });

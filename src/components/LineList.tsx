@@ -1,11 +1,8 @@
 import LineItem from "./LineItem";
 import type { ParsedLine } from "../lib/jsonl";
 
-type FilterType = "all" | "ok" | "error";
-
 type LineListProps = {
   lines: ParsedLine[];
-  filter: FilterType;
   pageSize: number;
   currentPage: number;
   expandedLineSet: Set<number>;
@@ -17,7 +14,6 @@ type LineListProps = {
 
 export default function LineList({
   lines,
-  filter,
   pageSize,
   currentPage,
   expandedLineSet,
@@ -26,26 +22,16 @@ export default function LineList({
   onExpandCurrentPage,
   onCollapseCurrentPage
 }: LineListProps) {
-  const filtered = lines.filter((line) => {
-    if (filter === "ok") {
-      return !line.error;
-    }
-    if (filter === "error") {
-      return Boolean(line.error);
-    }
-    return true;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(lines.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
-  const pageItems = filtered.slice(startIndex, startIndex + pageSize);
+  const pageItems = lines.slice(startIndex, startIndex + pageSize);
 
   return (
     <section className="line-list">
       <div className="line-list-toolbar">
         <span>
-          当前显示 {pageItems.length} / {filtered.length}
+          当前显示 {pageItems.length} / {lines.length}
         </span>
         <div className="toolbar-actions">
           <button type="button" className="ghost-btn" onClick={onExpandCurrentPage}>

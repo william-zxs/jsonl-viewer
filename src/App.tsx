@@ -13,6 +13,7 @@ export default function App() {
   const [isParsing, setIsParsing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedLineSet, setExpandedLineSet] = useState<Set<number>>(new Set());
 
@@ -23,19 +24,31 @@ export default function App() {
     return { total, success, failed };
   }, [lines]);
 
-  const filteredLineNumbers = useMemo(() => {
+  const filteredLines = useMemo(() => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
     return lines
       .filter((line) => {
         if (filter === "ok") {
-          return !line.error;
+          if (line.error) {
+            return false;
+          }
         }
         if (filter === "error") {
-          return Boolean(line.error);
+          if (!line.error) {
+            return false;
+          }
         }
-        return true;
-      })
-      .map((line) => line.lineNumber);
-  }, [filter, lines]);
+        if (!normalizedKeyword) {
+          return true;
+        }
+        return line.raw.toLowerCase().includes(normalizedKeyword);
+      });
+  }, [filter, keyword, lines]);
+
+  const filteredLineNumbers = useMemo(
+    () => filteredLines.map((line) => line.lineNumber),
+    [filteredLines]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredLineNumbers.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -149,14 +162,24 @@ export default function App() {
         >
           ERROR
         </button>
+        <input
+          type="search"
+          className="search-input"
+          placeholder="全文检索（按原始行匹配）"
+          aria-label="全文检索"
+          value={keyword}
+          onChange={(event) => {
+            setKeyword(event.target.value);
+            setCurrentPage(1);
+          }}
+        />
       </section>
 
       {errorMessage && <div className="error-banner">文件读取失败: {errorMessage}</div>}
       {isParsing && <div className="loading-tip">正在解析文件...</div>}
 
       <LineList
-        lines={lines}
-        filter={filter}
+        lines={filteredLines}
         pageSize={PAGE_SIZE}
         currentPage={safePage}
         expandedLineSet={expandedLineSet}

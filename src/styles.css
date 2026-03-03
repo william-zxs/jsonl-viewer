@@ -113,6 +113,8 @@ body.modal-open {
   display: flex;
   gap: 0.5rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .chip {
@@ -127,6 +129,16 @@ body.modal-open {
 .chip.active {
   background: #2d6f79;
   color: #fff;
+}
+
+.search-input {
+  min-width: min(320px, 100%);
+  flex: 1;
+  border: 1px solid #87a7b0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.38rem 0.8rem;
+  color: #22353f;
 }
 
 .error-banner,
