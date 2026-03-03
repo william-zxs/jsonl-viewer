@@ -103,9 +103,31 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
                   <div className="line-fullscreen-panel" onClick={(event) => event.stopPropagation()}>
                     <div className="line-fullscreen-header">
                       <strong>第 {line.lineNumber} 行 JSON</strong>
-                      <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(false)}>
-                        关闭全屏
-                      </button>
+                      <div className="line-fullscreen-actions">
+                        <button
+                          type="button"
+                          className="ghost-btn"
+                          onClick={() => {
+                            setControlMode("expand");
+                            setControlVersion((v) => v + 1);
+                          }}
+                        >
+                          展开该行全部
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-btn"
+                          onClick={() => {
+                            setControlMode("collapse");
+                            setControlVersion((v) => v + 1);
+                          }}
+                        >
+                          折叠该行全部
+                        </button>
+                        <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(false)}>
+                          关闭全屏
+                        </button>
+                      </div>
                     </div>
                     <div className="line-fullscreen-content">
                       <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} />

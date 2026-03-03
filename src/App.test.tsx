@@ -81,7 +81,7 @@ describe("App", () => {
     render(<App />);
 
     const input = screen.getByLabelText("选择 JSONL 文件");
-    const file = makeJsonlFile(`{"a":{"b":1}}\n{"x":2}\n`);
+    const file = makeJsonlFile(`{"a":{"b":{"c":1}}}\n{"x":2}\n`);
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -93,9 +93,18 @@ describe("App", () => {
 
     const dialog = screen.getByRole("dialog", { name: "第 1 行 JSON 全屏" });
     expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "展开该行全部" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "折叠该行全部" })).toBeInTheDocument();
     expect(within(dialog).getByText(/a:/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/c:/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "关闭全屏" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "展开该行全部" }));
+    expect(within(dialog).getByText(/c:/)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "折叠该行全部" }));
+    expect(within(dialog).queryByText(/a:/)).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "关闭全屏" }));
     expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "全屏" }));
