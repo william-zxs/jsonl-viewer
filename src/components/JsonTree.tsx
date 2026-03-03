@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { TranslateFn } from "../lib/i18n";
 
 type JsonTreeProps = {
+  t: TranslateFn;
   data: unknown;
   name?: string;
   depth?: number;
@@ -36,6 +38,7 @@ function typeClass(value: unknown): string {
 }
 
 export default function JsonTree({
+  t,
   data,
   name,
   depth = 0,
@@ -91,7 +94,7 @@ export default function JsonTree({
           type="button"
           className="tree-toggle"
           onClick={() => setIsOpen((prev) => !prev)}
-          aria-label={isOpen ? "折叠节点" : "展开节点"}
+          aria-label={isOpen ? t("treeCollapseNode") : t("treeExpandNode")}
         >
           {isOpen ? "▾" : "▸"}
         </button>
@@ -104,6 +107,7 @@ export default function JsonTree({
         entries.map(([key, value]) => (
           <JsonTree
             key={`${depth}-${key}`}
+            t={t}
             data={value}
             name={key}
             depth={depth + 1}

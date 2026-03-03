@@ -1,6 +1,19 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
+import { LOCALE_STORAGE_KEY } from "./lib/i18n";
+
+const pickFileLabel = /选择 JSONL 文件|Select JSONL file/i;
+const line1Label = /第 1 行|Line 1/i;
+const line2Label = /第 2 行|Line 2/i;
+const line3Label = /第 3 行|Line 3/i;
+const expandLineAllLabel = /展开该行全部|Expand all in line/i;
+const collapseLineAllLabel = /折叠该行全部|Collapse all in line/i;
+const fullscreenLabel = /全屏|Fullscreen/i;
+const fullscreenCloseLabel = /关闭全屏|Close fullscreen/i;
+const searchLabel = /全文检索|Search full text/i;
+const emptyLabel = /暂无数据|No data/i;
+const errorPrefix = /错误:|Error:/i;
 
 function makeJsonlFile(text: string): File {
   const file = new File([text], "sample.jsonl", { type: "text/plain" });
@@ -11,10 +24,15 @@ function makeJsonlFile(text: string): File {
 }
 
 describe("App", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem(LOCALE_STORAGE_KEY, "zh");
+  });
+
   it("上传后可展示统计、展开行、按错误过滤", async () => {
     render(<App />);
 
-    const input = screen.getByLabelText("选择 JSONL 文件");
+    const input = screen.getByLabelText(pickFileLabel);
     const file = makeJsonlFile(`{"a":1}\nnot-json\n{"b":2}\n`);
 
     fireEvent.change(input, { target: { files: [file] } });
@@ -26,18 +44,18 @@ describe("App", () => {
     expect(screen.getByTestId("stat-success")).toHaveTextContent("2");
     expect(screen.getByTestId("stat-failed")).toHaveTextContent("1");
 
-    fireEvent.click(screen.getByRole("button", { name: /第 1 行/i }));
+    fireEvent.click(screen.getByRole("button", { name: line1Label }));
     expect(screen.getByText(/a:/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "ERROR" }));
-    expect(screen.getByText(/第 2 行/)).toBeInTheDocument();
-    expect(screen.queryByText(/第 1 行/)).not.toBeInTheDocument();
+    expect(screen.getByText(line2Label)).toBeInTheDocument();
+    expect(screen.queryByText(line1Label)).not.toBeInTheDocument();
   });
 
   it("支持展开当前页全部和折叠当前页全部", async () => {
     render(<App />);
 
-    const input = screen.getByLabelText("选择 JSONL 文件");
+    const input = screen.getByLabelText(pickFileLabel);
     const file = makeJsonlFile(`{"a":1}\nnot-json\n{"b":2}\n`);
     fireEvent.change(input, { target: { files: [file] } });
 
@@ -45,21 +63,21 @@ describe("App", () => {
       expect(screen.getByTestId("stat-total")).toHaveTextContent("3");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "展开当前页全部" }));
+    fireEvent.click(screen.getByRole("button", { name: /展开当前页全部|Expand current page/i }));
     expect(screen.getByText(/a:/)).toBeInTheDocument();
     expect(screen.getByText(/b:/)).toBeInTheDocument();
-    expect(screen.getByText(/错误:/)).toBeInTheDocument();
+    expect(screen.getByText(errorPrefix)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "折叠当前页全部" }));
+    fireEvent.click(screen.getByRole("button", { name: /折叠当前页全部|Collapse current page/i }));
     expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/b:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/错误:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(errorPrefix)).not.toBeInTheDocument();
   });
 
   it("支持单行内 JSON 树全部展开和全部折叠", async () => {
     render(<App />);
 
-    const input = screen.getByLabelText("选择 JSONL 文件");
+    const input = screen.getByLabelText(pickFileLabel);
     const file = makeJsonlFile(`{"a":{"b":{"c":1}}}\n{"x":2}\n`);
     fireEvent.change(input, { target: { files: [file] } });
 
@@ -67,20 +85,20 @@ describe("App", () => {
       expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /第 1 行/i }));
+    fireEvent.click(screen.getByRole("button", { name: line1Label }));
     expect(screen.queryByText(/c:/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "展开该行全部" }));
+    fireEvent.click(screen.getByRole("button", { name: expandLineAllLabel }));
     expect(screen.getByText(/c:/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "折叠该行全部" }));
+    fireEvent.click(screen.getByRole("button", { name: collapseLineAllLabel }));
     expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
   });
 
   it("支持单行 JSON 块全屏展示并可关闭", async () => {
     render(<App />);
 
-    const input = screen.getByLabelText("选择 JSONL 文件");
+    const input = screen.getByLabelText(pickFileLabel);
     const file = makeJsonlFile(`{"a":{"b":{"c":1}}}\n{"x":2}\n`);
     fireEvent.change(input, { target: { files: [file] } });
 
@@ -88,39 +106,39 @@ describe("App", () => {
       expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /第 1 行/i }));
-    fireEvent.click(screen.getByRole("button", { name: "全屏" }));
+    fireEvent.click(screen.getByRole("button", { name: line1Label }));
+    fireEvent.click(screen.getByRole("button", { name: fullscreenLabel }));
 
-    const dialog = screen.getByRole("dialog", { name: "第 1 行 JSON 全屏" });
+    const dialog = screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i });
     expect(dialog).toBeInTheDocument();
     expect(document.body).toHaveClass("modal-open");
-    expect(within(dialog).getByRole("button", { name: "展开该行全部" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "折叠该行全部" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: expandLineAllLabel })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: collapseLineAllLabel })).toBeInTheDocument();
     expect(within(dialog).getByText(/a:/)).toBeInTheDocument();
     expect(within(dialog).queryByText(/c:/)).not.toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "展开该行全部" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: expandLineAllLabel }));
     expect(within(dialog).getByText(/c:/)).toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "折叠该行全部" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: collapseLineAllLabel }));
     expect(within(dialog).queryByText(/a:/)).not.toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "关闭全屏" }));
-    expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: fullscreenCloseLabel }));
+    expect(screen.queryByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i })).not.toBeInTheDocument();
     expect(document.body).not.toHaveClass("modal-open");
 
-    fireEvent.click(screen.getByRole("button", { name: "全屏" }));
-    expect(screen.getByRole("dialog", { name: "第 1 行 JSON 全屏" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: fullscreenLabel }));
+    expect(screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i })).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "第 1 行 JSON 全屏" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i })).not.toBeInTheDocument();
     expect(document.body).not.toHaveClass("modal-open");
   });
 
   it("支持全文检索并可与状态过滤组合", async () => {
     render(<App />);
 
-    const input = screen.getByLabelText("选择 JSONL 文件");
+    const input = screen.getByLabelText(pickFileLabel);
     const file = makeJsonlFile(`{"event":"login","user":"alice"}\nnot-json-line\n{"event":"logout","user":"bob"}\n`);
     fireEvent.change(input, { target: { files: [file] } });
 
@@ -128,18 +146,36 @@ describe("App", () => {
       expect(screen.getByTestId("stat-total")).toHaveTextContent("3");
     });
 
-    const searchInput = screen.getByRole("searchbox", { name: "全文检索" });
+    const searchInput = screen.getByRole("searchbox", { name: searchLabel });
     fireEvent.change(searchInput, { target: { value: "logout" } });
-    expect(screen.getByText(/第 3 行/)).toBeInTheDocument();
-    expect(screen.queryByText(/第 1 行/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/第 2 行/)).not.toBeInTheDocument();
+    expect(screen.getByText(line3Label)).toBeInTheDocument();
+    expect(screen.queryByText(line1Label)).not.toBeInTheDocument();
+    expect(screen.queryByText(line2Label)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "ERROR" }));
-    expect(screen.queryByText(/第 3 行/)).not.toBeInTheDocument();
-    expect(screen.getByText("暂无数据")).toBeInTheDocument();
+    expect(screen.queryByText(line3Label)).not.toBeInTheDocument();
+    expect(screen.getByText(emptyLabel)).toBeInTheDocument();
 
     fireEvent.change(searchInput, { target: { value: "json" } });
-    expect(screen.getByText(/第 2 行/)).toBeInTheDocument();
-    expect(screen.queryByText(/第 1 行/)).not.toBeInTheDocument();
+    expect(screen.getByText(line2Label)).toBeInTheDocument();
+    expect(screen.queryByText(line1Label)).not.toBeInTheDocument();
+  });
+
+  it("支持右上角切换语言并持久化", async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "EN" }));
+
+    expect(screen.getByText("File")).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: /Search full text/i })).toBeInTheDocument();
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("en");
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const file = makeJsonlFile(`{"a":1}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Line 1/i })).toBeInTheDocument();
+    });
   });
 });

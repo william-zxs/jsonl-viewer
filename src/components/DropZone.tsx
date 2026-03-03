@@ -1,11 +1,13 @@
 import { useRef, useState, type DragEvent } from "react";
+import type { TranslateFn } from "../lib/i18n";
 
 type DropZoneProps = {
   onFile: (file: File) => void;
   disabled?: boolean;
+  t: TranslateFn;
 };
 
-export default function DropZone({ onFile, disabled = false }: DropZoneProps) {
+export default function DropZone({ onFile, disabled = false, t }: DropZoneProps) {
   const [isHover, setIsHover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -51,14 +53,14 @@ export default function DropZone({ onFile, disabled = false }: DropZoneProps) {
       }}
       onDragLeave={() => setIsHover(false)}
       onDrop={handleDrop}
-      aria-label="上传 JSONL 文件"
+      aria-label={t("dropZoneAria")}
     >
       <input
         ref={inputRef}
         type="file"
         accept=".jsonl,.txt,.log,application/json,text/plain"
         className="hidden-input"
-        aria-label="选择 JSONL 文件"
+        aria-label={t("pickFileAria")}
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) {
@@ -67,8 +69,8 @@ export default function DropZone({ onFile, disabled = false }: DropZoneProps) {
           event.currentTarget.value = "";
         }}
       />
-      <p className="drop-main">拖拽 JSONL 文件到这里</p>
-      <p className="drop-sub">或点击选择文件</p>
+      <p className="drop-main">{t("dropMain")}</p>
+      <p className="drop-sub">{t("dropSub")}</p>
     </div>
   );
 }

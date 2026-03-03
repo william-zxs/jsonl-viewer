@@ -1,32 +1,34 @@
 import { useEffect, useState } from "react";
 import JsonTree from "./JsonTree";
 import type { ParsedLine } from "../lib/jsonl";
+import type { TranslateFn } from "../lib/i18n";
 
 type LineItemProps = {
+  t: TranslateFn;
   line: ParsedLine;
   expanded: boolean;
   onToggle: (lineNumber: number) => void;
 };
 
-function summarize(parsed: unknown | null, error: string | null): string {
+function summarize(t: TranslateFn, parsed: unknown | null, error: string | null): string {
   if (error) {
-    return "解析失败";
+    return t("lineSummaryParseFailed");
   }
   if (parsed === null) {
     return "null";
   }
   if (Array.isArray(parsed)) {
-    return `数组(${parsed.length})`;
+    return t("lineSummaryArray", { count: parsed.length });
   }
   if (typeof parsed === "object") {
-    return `对象(${Object.keys(parsed as Record<string, unknown>).length}键)`;
+    return t("lineSummaryObject", { count: Object.keys(parsed as Record<string, unknown>).length });
   }
   return typeof parsed;
 }
 
-export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
+export default function LineItem({ t, line, expanded, onToggle }: LineItemProps) {
   const status = line.error ? "ERROR" : "OK";
-  const summary = summarize(line.parsed, line.error);
+  const summary = summarize(t, line.parsed, line.error);
   const [controlVersion, setControlVersion] = useState(0);
   const [controlMode, setControlMode] = useState<"expand" | "collapse" | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -69,20 +71,20 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
           onClick={() => onToggle(line.lineNumber)}
           aria-expanded={expanded}
         >
-          <span className="line-title">第 {line.lineNumber} 行</span>
+          <span className="line-title">{t("lineTitle", { lineNumber: line.lineNumber })}</span>
           <span className={`line-status ${status === "OK" ? "status-ok" : "status-error"}`}>{status}</span>
           <span className="line-summary">{summary}</span>
         </button>
         {expanded && !line.error && (
           <div className="line-head-actions">
             <button type="button" className="ghost-btn" onClick={triggerExpandAll}>
-              展开该行全部
+              {t("expandLineAll")}
             </button>
             <button type="button" className="ghost-btn" onClick={triggerCollapseAll}>
-              折叠该行全部
+              {t("collapseLineAll")}
             </button>
             <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(true)}>
-              全屏
+              {t("fullscreen")}
             </button>
           </div>
         )}
@@ -92,45 +94,45 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
         <div className="line-body">
           {line.error ? (
             <>
-              <p className="error-text">错误: {line.error}</p>
+              <p className="error-text">{t("errorPrefix", { message: line.error })}</p>
               <pre className="raw-line">{line.raw}</pre>
             </>
           ) : (
             <>
-              <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} />
+              <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} t={t} />
               {isFullscreen && (
                 <div
                   className="line-fullscreen-overlay"
                   role="dialog"
                   aria-modal="true"
-                  aria-label={`第 ${line.lineNumber} 行 JSON 全屏`}
+                  aria-label={t("fullscreenDialogLabel", { lineNumber: line.lineNumber })}
                   onClick={() => setIsFullscreen(false)}
                 >
                   <div className="line-fullscreen-panel" onClick={(event) => event.stopPropagation()}>
                     <div className="line-fullscreen-header">
-                      <strong>第 {line.lineNumber} 行 JSON</strong>
+                      <strong>{t("fullscreenTitle", { lineNumber: line.lineNumber })}</strong>
                       <div className="line-fullscreen-actions">
                         <button
                           type="button"
                           className="ghost-btn"
                           onClick={triggerExpandAll}
                         >
-                          展开该行全部
+                          {t("expandLineAll")}
                         </button>
                         <button
                           type="button"
                           className="ghost-btn"
                           onClick={triggerCollapseAll}
                         >
-                          折叠该行全部
+                          {t("collapseLineAll")}
                         </button>
                         <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(false)}>
-                          关闭全屏
+                          {t("closeFullscreen")}
                         </button>
                       </div>
                     </div>
                     <div className="line-fullscreen-content">
-                      <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} />
+                      <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} t={t} />
                     </div>
                   </div>
                 </div>

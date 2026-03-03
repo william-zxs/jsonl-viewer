@@ -1,7 +1,9 @@
 import LineItem from "./LineItem";
 import type { ParsedLine } from "../lib/jsonl";
+import type { TranslateFn } from "../lib/i18n";
 
 type LineListProps = {
+  t: TranslateFn;
   lines: ParsedLine[];
   pageSize: number;
   currentPage: number;
@@ -13,6 +15,7 @@ type LineListProps = {
 };
 
 export default function LineList({
+  t,
   lines,
   pageSize,
   currentPage,
@@ -31,23 +34,24 @@ export default function LineList({
     <section className="line-list">
       <div className="line-list-toolbar">
         <span>
-          当前显示 {pageItems.length} / {lines.length}
+          {t("showingCount", { pageCount: pageItems.length, total: lines.length })}
         </span>
         <div className="toolbar-actions">
           <button type="button" className="ghost-btn" onClick={onExpandCurrentPage}>
-            展开当前页全部
+            {t("expandCurrentPage")}
           </button>
           <button type="button" className="ghost-btn" onClick={onCollapseCurrentPage}>
-            折叠当前页全部
+            {t("collapseCurrentPage")}
           </button>
         </div>
       </div>
 
-      {pageItems.length === 0 && <div className="empty-state">暂无数据</div>}
+      {pageItems.length === 0 && <div className="empty-state">{t("emptyState")}</div>}
 
       {pageItems.map((line) => (
         <LineItem
           key={line.lineNumber}
+          t={t}
           line={line}
           expanded={expandedLineSet.has(line.lineNumber)}
           onToggle={onToggleLine}
@@ -61,7 +65,7 @@ export default function LineList({
           disabled={safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
         >
-          上一页
+          {t("prevPage")}
         </button>
         <span data-testid="pagination-text">
           {safePage} / {totalPages}
@@ -72,7 +76,7 @@ export default function LineList({
           disabled={safePage >= totalPages}
           onClick={() => onPageChange(safePage + 1)}
         >
-          下一页
+          {t("nextPage")}
         </button>
       </div>
     </section>

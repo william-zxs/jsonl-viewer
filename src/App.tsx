@@ -1,13 +1,21 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DropZone from "./components/DropZone";
 import LineList from "./components/LineList";
 import { parseJsonl, type ParsedLine } from "./lib/jsonl";
+import {
+  LOCALE_STORAGE_KEY,
+  resolveInitialLocale,
+  t as translateMessage,
+  type Locale,
+  type TranslateFn
+} from "./lib/i18n";
 
 const PAGE_SIZE = 200;
 
 type FilterType = "all" | "ok" | "error";
 
 export default function App() {
+  const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale());
   const [fileName, setFileName] = useState("");
   const [lines, setLines] = useState<ParsedLine[]>([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -16,6 +24,12 @@ export default function App() {
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedLineSet, setExpandedLineSet] = useState<Set<number>>(new Set());
+  const t: TranslateFn = (key, params) => translateMessage(locale, key, params);
+
+  useEffect(() => {
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const stats = useMemo(() => {
     const total = lines.length;
@@ -63,7 +77,7 @@ export default function App() {
       const text = await file.text();
       setLines(parseJsonl(text));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "读取文件失败";
+      const message = error instanceof Error ? error.message : t("readFileFailedUnknown");
       setLines([]);
       setErrorMessage(message);
     } finally {
@@ -106,28 +120,49 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="top-panel">
-        <h1>JSONL Viewer</h1>
-        <p>拖拽上传后按行展开 JSON，支持树形折叠分析</p>
+        <div className="top-panel-main">
+          <h1>{t("appTitle")}</h1>
+          <p>{t("appSubtitle")}</p>
+        </div>
+        <div className="lang-switch" role="group" aria-label={t("languageSwitcherAria")}>
+          <button
+            type="button"
+            className={`lang-btn ${locale === "zh" ? "active" : ""}`}
+            onClick={() => setLocale("zh")}
+            aria-pressed={locale === "zh"}
+          >
+            {t("languageZh")}
+          </button>
+          <span className="lang-sep">/</span>
+          <button
+            type="button"
+            className={`lang-btn ${locale === "en" ? "active" : ""}`}
+            onClick={() => setLocale("en")}
+            aria-pressed={locale === "en"}
+          >
+            {t("languageEn")}
+          </button>
+        </div>
       </header>
 
-      <DropZone onFile={handleFile} disabled={isParsing} />
+      <DropZone onFile={handleFile} disabled={isParsing} t={t} />
 
       <section className="stats-grid">
         <div className="stat-card">
-          <span>总行数</span>
+          <span>{t("statTotal")}</span>
           <strong data-testid="stat-total">{stats.total}</strong>
         </div>
         <div className="stat-card">
-          <span>成功</span>
+          <span>{t("statSuccess")}</span>
           <strong data-testid="stat-success">{stats.success}</strong>
         </div>
         <div className="stat-card">
-          <span>失败</span>
+          <span>{t("statFailed")}</span>
           <strong data-testid="stat-failed">{stats.failed}</strong>
         </div>
         <div className="stat-card">
-          <span>文件</span>
-          <strong className="truncate">{fileName || "未选择"}</strong>
+          <span>{t("statFile")}</span>
+          <strong className="truncate">{fileName || t("fileNotSelected")}</strong>
         </div>
       </section>
 
@@ -140,7 +175,7 @@ export default function App() {
             setCurrentPage(1);
           }}
         >
-          All
+          {t("filterAll")}
         </button>
         <button
           type="button"
@@ -150,7 +185,7 @@ export default function App() {
             setCurrentPage(1);
           }}
         >
-          OK
+          {t("filterOk")}
         </button>
         <button
           type="button"
@@ -160,13 +195,13 @@ export default function App() {
             setCurrentPage(1);
           }}
         >
-          ERROR
+          {t("filterError")}
         </button>
         <input
           type="search"
           className="search-input"
-          placeholder="全文检索（按原始行匹配）"
-          aria-label="全文检索"
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchAria")}
           value={keyword}
           onChange={(event) => {
             setKeyword(event.target.value);
@@ -175,10 +210,11 @@ export default function App() {
         />
       </section>
 
-      {errorMessage && <div className="error-banner">文件读取失败: {errorMessage}</div>}
-      {isParsing && <div className="loading-tip">正在解析文件...</div>}
+      {errorMessage && <div className="error-banner">{t("readFileFailedPrefix", { message: errorMessage })}</div>}
+      {isParsing && <div className="loading-tip">{t("loadingTip")}</div>}
 
       <LineList
+        t={t}
         lines={filteredLines}
         pageSize={PAGE_SIZE}
         currentPage={safePage}

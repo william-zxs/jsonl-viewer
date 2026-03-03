@@ -32,6 +32,17 @@ body.modal-open {
   padding: 1.2rem;
 }
 
+.top-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.top-panel-main {
+  min-width: 0;
+}
+
 .top-panel h1 {
   margin: 0;
   font-size: clamp(1.4rem, 1.2rem + 1vw, 2rem);
@@ -41,6 +52,31 @@ body.modal-open {
 .top-panel p {
   margin: 0.3rem 0 1rem;
   color: #3f535f;
+}
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.2rem;
+  white-space: nowrap;
+}
+
+.lang-btn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+  color: #4b6675;
+}
+
+.lang-btn.active {
+  color: #0f4f5b;
+}
+
+.lang-sep {
+  color: #5f7785;
 }
 
 .drop-zone {
@@ -394,6 +430,10 @@ body.modal-open {
     width: calc(100% - 1rem);
     margin: 1rem auto 2rem;
     padding: 0.6rem;
+  }
+
+  .top-panel {
+    flex-wrap: wrap;
   }
 
   .line-head {
