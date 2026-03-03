@@ -203,15 +203,29 @@ body.modal-open {
 }
 
 .line-head {
+  padding: 0.72rem 0.8rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.line-head-main {
+  flex: 1;
   width: 100%;
   border: 0;
   background: transparent;
-  padding: 0.72rem 0.8rem;
+  padding: 0;
   text-align: left;
   display: flex;
   gap: 0.6rem;
   align-items: center;
   cursor: pointer;
+}
+
+.line-head-actions {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: flex-end;
 }
 
 .line-title {
@@ -244,12 +258,6 @@ body.modal-open {
   border-top: 1px solid rgba(17, 53, 62, 0.12);
   padding: 0.65rem 0.8rem;
   overflow: auto;
-}
-
-.line-body-actions {
-  display: flex;
-  gap: 0.45rem;
-  margin: 0 0 0.55rem;
 }
 
 .line-fullscreen-overlay {
@@ -389,6 +397,16 @@ body.modal-open {
   }
 
   .line-head {
+    flex-wrap: wrap;
+  }
+
+  .line-head-main {
+    min-width: 100%;
+  }
+
+  .line-head-actions {
+    width: 100%;
+    justify-content: flex-start;
     flex-wrap: wrap;
   }
 

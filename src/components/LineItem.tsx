@@ -30,6 +30,14 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
   const [controlVersion, setControlVersion] = useState(0);
   const [controlMode, setControlMode] = useState<"expand" | "collapse" | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const triggerExpandAll = () => {
+    setControlMode("expand");
+    setControlVersion((v) => v + 1);
+  };
+  const triggerCollapseAll = () => {
+    setControlMode("collapse");
+    setControlVersion((v) => v + 1);
+  };
 
   useEffect(() => {
     if (!isFullscreen) {
@@ -54,16 +62,31 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
 
   return (
     <article className={`line-item ${line.error ? "line-error" : ""}`}>
-      <button
-        type="button"
-        className="line-head"
-        onClick={() => onToggle(line.lineNumber)}
-        aria-expanded={expanded}
-      >
-        <span className="line-title">第 {line.lineNumber} 行</span>
-        <span className={`line-status ${status === "OK" ? "status-ok" : "status-error"}`}>{status}</span>
-        <span className="line-summary">{summary}</span>
-      </button>
+      <div className="line-head">
+        <button
+          type="button"
+          className="line-head-main"
+          onClick={() => onToggle(line.lineNumber)}
+          aria-expanded={expanded}
+        >
+          <span className="line-title">第 {line.lineNumber} 行</span>
+          <span className={`line-status ${status === "OK" ? "status-ok" : "status-error"}`}>{status}</span>
+          <span className="line-summary">{summary}</span>
+        </button>
+        {expanded && !line.error && (
+          <div className="line-head-actions">
+            <button type="button" className="ghost-btn" onClick={triggerExpandAll}>
+              展开该行全部
+            </button>
+            <button type="button" className="ghost-btn" onClick={triggerCollapseAll}>
+              折叠该行全部
+            </button>
+            <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(true)}>
+              全屏
+            </button>
+          </div>
+        )}
+      </div>
 
       {expanded && (
         <div className="line-body">
@@ -74,31 +97,6 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
             </>
           ) : (
             <>
-              <div className="line-body-actions">
-                <button
-                  type="button"
-                  className="ghost-btn"
-                  onClick={() => {
-                    setControlMode("expand");
-                    setControlVersion((v) => v + 1);
-                  }}
-                >
-                  展开该行全部
-                </button>
-                <button
-                  type="button"
-                  className="ghost-btn"
-                  onClick={() => {
-                    setControlMode("collapse");
-                    setControlVersion((v) => v + 1);
-                  }}
-                >
-                  折叠该行全部
-                </button>
-                <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(true)}>
-                  全屏
-                </button>
-              </div>
               <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} />
               {isFullscreen && (
                 <div
@@ -115,20 +113,14 @@ export default function LineItem({ line, expanded, onToggle }: LineItemProps) {
                         <button
                           type="button"
                           className="ghost-btn"
-                          onClick={() => {
-                            setControlMode("expand");
-                            setControlVersion((v) => v + 1);
-                          }}
+                          onClick={triggerExpandAll}
                         >
                           展开该行全部
                         </button>
                         <button
                           type="button"
                           className="ghost-btn"
-                          onClick={() => {
-                            setControlMode("collapse");
-                            setControlVersion((v) => v + 1);
-                          }}
+                          onClick={triggerCollapseAll}
                         >
                           折叠该行全部
                         </button>
