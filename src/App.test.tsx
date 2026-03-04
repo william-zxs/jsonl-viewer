@@ -139,9 +139,9 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: line1Label }));
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: fullscreenLabel })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: fullscreenLabel }).length).toBeGreaterThan(0);
     });
-    fireEvent.click(screen.getByRole("button", { name: fullscreenLabel }));
+    fireEvent.click(screen.getAllByRole("button", { name: fullscreenLabel })[0]);
 
     const dialog = screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i });
     expect(dialog).toBeInTheDocument();
@@ -155,12 +155,30 @@ describe("App", () => {
     expect(screen.queryByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i })).not.toBeInTheDocument();
     expect(document.body).not.toHaveClass("modal-open");
 
-    fireEvent.click(screen.getByRole("button", { name: fullscreenLabel }));
+    fireEvent.click(screen.getAllByRole("button", { name: fullscreenLabel })[0]);
     expect(screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i })).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i })).not.toBeInTheDocument();
     expect(document.body).not.toHaveClass("modal-open");
+  });
+
+  it("支持直接点击行右侧全屏图标进入全屏", async () => {
+    render(<App />);
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const file = makeJsonlFile(`{"a":{"b":{"c":1}}}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("1");
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: fullscreenLabel })[0]);
+
+    const dialog = screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: fullscreenCloseLabel })).toBeInTheDocument();
   });
 
   it("支持全文检索并可与状态过滤组合", async () => {

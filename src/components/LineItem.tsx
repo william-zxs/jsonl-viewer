@@ -53,6 +53,9 @@ export default function LineItem({
   };
   const openFullscreen = () => {
     triggerExpandAll();
+    if (!expanded) {
+      onToggle(line.lineNumber);
+    }
     setIsFullscreen(true);
   };
   const handleLineHeadClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
@@ -86,9 +89,6 @@ export default function LineItem({
     }
     if (line.error) {
       return;
-    }
-    if (!expanded) {
-      onToggle(line.lineNumber);
     }
     openFullscreen();
   };
@@ -132,7 +132,7 @@ export default function LineItem({
   );
 
   return (
-    <article className={`line-item ${line.error ? "line-error" : ""}`}>
+    <article className={`line-item ${line.error ? "line-error" : ""} ${expanded ? "is-expanded" : ""}`}>
       <div className="line-head">
         <button
           type="button"
@@ -145,7 +145,7 @@ export default function LineItem({
           <span className={`line-status ${status === "OK" ? "status-ok" : "status-error"}`}>{status}</span>
           <span className="line-summary">{summary}</span>
         </button>
-        {expanded && !line.error && (
+        {!line.error && (
           <div className="line-head-actions">
             <button
               type="button"

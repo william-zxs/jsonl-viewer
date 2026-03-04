@@ -301,11 +301,11 @@ body.modal-open {
   display: flex;
   gap: 0.6rem;
   align-items: center;
+  min-height: 3rem;
 }
 
 .line-head-main {
   flex: 1;
-  width: 100%;
   border: 0;
   background: transparent;
   padding: 0;
@@ -321,11 +321,15 @@ body.modal-open {
   gap: 0.45rem;
   justify-content: flex-end;
   align-items: center;
+  min-width: 1.7rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .icon-btn {
-  width: 2rem;
-  height: 2rem;
+  width: 1.7rem;
+  height: 1.7rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -339,13 +343,30 @@ body.modal-open {
 }
 
 .icon-btn svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.85rem;
+  height: 0.85rem;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.line-head-actions .icon-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.line-item:hover .line-head-actions .icon-btn,
+.line-head:focus-within .icon-btn,
+.line-item.is-expanded .line-head-actions .icon-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.line-fullscreen-actions .icon-btn {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .icon-btn:hover,
