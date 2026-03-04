@@ -45,7 +45,9 @@ export type MessageKey =
   | "fullscreenTitle"
   | "closeFullscreen"
   | "treeCollapseNode"
-  | "treeExpandNode";
+  | "treeExpandNode"
+  | "treeCopyNode"
+  | "treeCopied";
 
 type Messages = Record<MessageKey, string>;
 export type TranslateFn = (
@@ -97,7 +99,9 @@ const messages: Record<Locale, Messages> = {
     fullscreenTitle: "第 {lineNumber} 行 JSON",
     closeFullscreen: "关闭全屏",
     treeCollapseNode: "折叠节点",
-    treeExpandNode: "展开节点"
+    treeExpandNode: "展开节点",
+    treeCopyNode: "复制",
+    treeCopied: "已复制"
   },
   en: {
     appTitle: "JSONL Viewer",
@@ -142,7 +146,9 @@ const messages: Record<Locale, Messages> = {
     fullscreenTitle: "Line {lineNumber} JSON",
     closeFullscreen: "Close fullscreen",
     treeCollapseNode: "Collapse node",
-    treeExpandNode: "Expand node"
+    treeExpandNode: "Expand node",
+    treeCopyNode: "Copy",
+    treeCopied: "Copied"
   }
 };
 

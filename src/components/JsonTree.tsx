@@ -14,6 +14,44 @@ type JsonTreeProps = {
   onLeafDoubleClick?: () => void;
 };
 
+function fallbackCopyText(text: string): boolean {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  document.body.appendChild(textarea);
+  textarea.select();
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+  return copied;
+}
+
+async function copyText(text: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return fallbackCopyText(text);
+    }
+  }
+  return fallbackCopyText(text);
+}
+
+function stringifyNode(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
 function formatPrimitive(value: unknown): string {
   if (value === null) {
     return "null";
@@ -68,8 +106,10 @@ export default function JsonTree({
         ? false
         : depth < defaultExpandedDepth;
   const [isOpen, setIsOpen] = useState(initialOpen);
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const prevControlVersion = useRef(controlVersion);
   const toggleButtonRef = useRef<HTMLButtonElement | null>(null);
+  const copyResetTimerRef = useRef<number | null>(null);
   const focusOnCloseRef = useRef(false);
 
   useEffect(() => {
@@ -91,6 +131,15 @@ export default function JsonTree({
       focusOnCloseRef.current = false;
     }
   }, [isOpen]);
+
+  useEffect(
+    () => () => {
+      if (copyResetTimerRef.current !== null) {
+        window.clearTimeout(copyResetTimerRef.current);
+      }
+    },
+    []
+  );
 
   const entries = useMemo(() => {
     if (!isObject) {
@@ -128,6 +177,7 @@ export default function JsonTree({
   }
 
   const isArray = Array.isArray(data);
+  const copyPayload = useMemo(() => stringifyNode(data), [data]);
   const openSymbol = isArray ? "[" : "{";
   const closeSymbol = isArray ? "]" : "}";
   const preview = isArray ? `[${entries.length}]` : `{${entries.length}}`;
@@ -143,6 +193,22 @@ export default function JsonTree({
   const handleTailDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     closeCurrentBlockAndFocus();
+  };
+  const handleCopyClick = async (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const copied = await copyText(copyPayload);
+    if (!copied) {
+      return;
+    }
+    setCopyState("copied");
+    if (copyResetTimerRef.current !== null) {
+      window.clearTimeout(copyResetTimerRef.current);
+    }
+    copyResetTimerRef.current = window.setTimeout(() => {
+      setCopyState("idle");
+      copyResetTimerRef.current = null;
+    }, 2000);
   };
 
   return (
@@ -167,9 +233,21 @@ export default function JsonTree({
         >
           {isOpen ? "▾" : "▸"}
         </button>
-        {name !== undefined && <span className="tree-key">{name}: </span>}
-        {!isOpen && <span className="tree-preview">{preview}</span>}
-        {isOpen && <span className="tree-bracket">{openSymbol}</span>}
+        <div className="tree-head-main">
+          {name !== undefined && <span className="tree-key">{name}: </span>}
+          {!isOpen && <span className="tree-preview">{preview}</span>}
+          {isOpen && <span className="tree-bracket">{openSymbol}</span>}
+        </div>
+        <div className="tree-head-actions">
+          <button
+            type="button"
+            className="tree-copy-btn"
+            onClick={handleCopyClick}
+            aria-label={copyState === "copied" ? t("treeCopied") : t("treeCopyNode")}
+          >
+            {copyState === "copied" ? t("treeCopied") : t("treeCopyNode")}
+          </button>
+        </div>
       </div>
 
       {isOpen && (

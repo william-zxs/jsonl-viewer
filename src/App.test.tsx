@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { LOCALE_STORAGE_KEY } from "./lib/i18n";
 
@@ -14,6 +14,8 @@ const expandLineAllLabel = /展开该行全部|Expand all in line/i;
 const collapseLineAllLabel = /折叠该行全部|Collapse all in line/i;
 const fullscreenLabel = /全屏|Fullscreen/i;
 const fullscreenCloseLabel = /关闭全屏|Close fullscreen/i;
+const treeCopyLabel = /复制|Copy/i;
+const treeCopiedLabel = /已复制|Copied/i;
 const searchLabel = /全文检索|Search full text/i;
 const tryExampleLabel = /试用示例|Try Example/i;
 const emptyLabel = /暂无数据|No data/i;
@@ -198,5 +200,38 @@ describe("App", () => {
 
     expect(screen.getByText("example_agent_session.jsonl")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: line1Label })).toBeInTheDocument();
+  });
+
+  it("支持在 JSON 树块头复制当前节点 JSON，并显示已复制反馈", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true
+    });
+
+    render(<App />);
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const file = makeJsonlFile(`{"a":{"b":1}}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("1");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: line1Label }));
+    const copyButton = screen.getAllByRole("button", { name: treeCopyLabel })[0];
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('{\n  "a": {\n    "b": 1\n  }\n}');
+      expect(screen.getAllByRole("button", { name: treeCopiedLabel })).toHaveLength(1);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: treeCopiedLabel })).not.toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: treeCopyLabel }).length).toBeGreaterThanOrEqual(2);
+    }, { timeout: 3000 });
   });
 });

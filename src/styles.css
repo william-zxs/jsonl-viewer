@@ -576,6 +576,49 @@ body.modal-open {
 .tree-block-head {
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.tree-head-main {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.28rem;
+  flex: 1;
+}
+
+.tree-head-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tree-copy-btn {
+  border: 1px solid #9bb2cc;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2f556e;
+  padding: 0.08rem 0.5rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.tree-block-head:hover .tree-copy-btn,
+.tree-block-head:focus-within .tree-copy-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tree-copy-btn:hover,
+.tree-copy-btn:focus-visible {
+  border-color: #6f94c5;
+  background: #f4f9ff;
 }
 
 .tree-block-tail {
