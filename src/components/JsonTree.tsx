@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import type { TranslateFn } from "../lib/i18n";
 
 type JsonTreeProps = {
@@ -91,14 +92,30 @@ export default function JsonTree({
   const openSymbol = isArray ? "[" : "{";
   const closeSymbol = isArray ? "]" : "}";
   const preview = isArray ? `[${entries.length}]` : `{${entries.length}}`;
+  const toggleOpen = () => setIsOpen((prev) => !prev);
+  const handleHeadMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.detail > 1) {
+      event.preventDefault();
+    }
+  };
+  const handleHeadDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    toggleOpen();
+  };
 
   return (
     <div className={`tree-block ${blockDepthClass} ${isOpen ? "is-open" : "is-closed"}`} data-depth={depth}>
-      <div className={`tree-line ${lineDepthClass} tree-block-head`} style={lineStyle} data-depth={depth}>
+      <div
+        className={`tree-line ${lineDepthClass} tree-block-head`}
+        style={lineStyle}
+        data-depth={depth}
+        onMouseDown={handleHeadMouseDown}
+        onDoubleClick={handleHeadDoubleClick}
+      >
         <button
           type="button"
           className="tree-toggle"
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={toggleOpen}
           aria-label={isOpen ? t("treeCollapseNode") : t("treeExpandNode")}
         >
           {isOpen ? "▾" : "▸"}
