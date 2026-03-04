@@ -8,7 +8,8 @@
   --json-level-3: #dce8ff;
   --json-level-4: #cfdfff;
   --json-level-5: #c2d6ff;
-  --json-hover: #eaf2ff;
+  --json-hover: #ffeab6;
+  --json-active-outline: #e5b24a;
   --json-text-main: #1f2937;
   --json-text-muted: #64748b;
   background: radial-gradient(circle at 15% 10%, #ffd56f 0%, transparent 30%),
@@ -383,6 +384,12 @@ body.modal-open {
 
 .tree-line:hover {
   background: var(--json-hover);
+  box-shadow: inset 0 0 0 1px var(--json-active-outline);
+}
+
+.tree-line:focus-within {
+  background: var(--json-hover);
+  box-shadow: inset 0 0 0 1px var(--json-active-outline);
 }
 
 .line-depth-1 {
@@ -432,6 +439,12 @@ body.modal-open {
 
 .tree-block.is-open .tree-line:hover {
   background: var(--json-hover);
+  box-shadow: inset 0 0 0 1px var(--json-active-outline);
+}
+
+.tree-block.is-open .tree-line:focus-within {
+  background: var(--json-hover);
+  box-shadow: inset 0 0 0 1px var(--json-active-outline);
 }
 
 .block-depth-0.is-open {
