@@ -50,6 +50,10 @@ export default function LineItem({
     setControlMode("collapse");
     setControlVersion((v) => v + 1);
   };
+  const openFullscreen = () => {
+    triggerExpandAll();
+    setIsFullscreen(true);
+  };
 
   useEffect(() => {
     if (pageControlVersion !== prevPageControlVersion.current && pageControlMode) {
@@ -101,7 +105,7 @@ export default function LineItem({
             <button type="button" className="ghost-btn" onClick={triggerCollapseAll}>
               {t("collapseLineAll")}
             </button>
-            <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(true)}>
+            <button type="button" className="ghost-btn" onClick={openFullscreen}>
               {t("fullscreen")}
             </button>
           </div>

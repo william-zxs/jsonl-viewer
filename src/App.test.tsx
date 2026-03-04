@@ -125,9 +125,6 @@ describe("App", () => {
     expect(within(dialog).getByRole("button", { name: expandLineAllLabel })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: collapseLineAllLabel })).toBeInTheDocument();
     expect(within(dialog).getByText(/a:/)).toBeInTheDocument();
-    expect(within(dialog).queryByText(/c:/)).not.toBeInTheDocument();
-
-    fireEvent.click(within(dialog).getByRole("button", { name: expandLineAllLabel }));
     expect(within(dialog).getByText(/c:/)).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: collapseLineAllLabel }));
