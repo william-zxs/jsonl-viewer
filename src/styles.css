@@ -508,8 +508,28 @@ body.modal-open {
   transition: opacity 0.12s ease;
 }
 
+.tree-line::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: var(--active-left, 0px);
+  width: 2px;
+  border-radius: 999px;
+  background: #6f94c5;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.12s ease;
+}
+
 .tree-line:hover::after,
 .tree-line:focus-within::after {
+  opacity: 1;
+}
+
+.tree-line:hover::before,
+.tree-line:focus-within::before {
   opacity: 1;
 }
 
