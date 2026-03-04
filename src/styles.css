@@ -588,6 +588,21 @@ body.modal-open {
   background: var(--block-bg);
   pointer-events: none;
   z-index: 0;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+.tree-block.is-open:hover::before,
+.tree-block.is-open:focus-within::before {
+  border-color: #6f98e5;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(241, 247, 255, 0.96) 100%);
+  box-shadow: 0 0 0 2px rgba(108, 151, 233, 0.4), 0 10px 20px rgba(58, 95, 166, 0.24);
+}
+
+/* When hovering nested blocks, suppress ancestor block highlight and keep only the innermost one. */
+.tree-block.is-open:hover:has(.tree-block.is-open:hover)::before {
+  border-color: var(--block-border);
+  background: var(--block-bg);
+  box-shadow: none;
 }
 
 .tree-block > * {
