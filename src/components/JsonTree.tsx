@@ -11,6 +11,7 @@ type JsonTreeProps = {
   defaultExpandedDepth?: number;
   controlVersion?: number;
   controlMode?: "expand" | "collapse" | null;
+  onLeafDoubleClick?: () => void;
 };
 
 function formatPrimitive(value: unknown): string {
@@ -46,7 +47,8 @@ export default function JsonTree({
   depth = 0,
   defaultExpandedDepth = 1,
   controlVersion = 0,
-  controlMode = null
+  controlMode = null,
+  onLeafDoubleClick
 }: JsonTreeProps) {
   const safeDepth = Math.min(depth, 5);
   const lineDepthClass = `line-depth-${safeDepth}`;
@@ -57,6 +59,8 @@ export default function JsonTree({
     controlMode === "expand" ? true : controlMode === "collapse" ? false : depth < defaultExpandedDepth;
   const [isOpen, setIsOpen] = useState(initialOpen);
   const prevControlVersion = useRef(controlVersion);
+  const toggleButtonRef = useRef<HTMLButtonElement | null>(null);
+  const focusOnCloseRef = useRef(false);
 
   useEffect(() => {
     if (controlVersion !== prevControlVersion.current) {
@@ -69,6 +73,13 @@ export default function JsonTree({
     }
   }, [controlMode, controlVersion]);
 
+  useEffect(() => {
+    if (!isOpen && focusOnCloseRef.current) {
+      toggleButtonRef.current?.focus();
+      focusOnCloseRef.current = false;
+    }
+  }, [isOpen]);
+
   const entries = useMemo(() => {
     if (!isObject) {
       return [];
@@ -79,9 +90,25 @@ export default function JsonTree({
     return Object.entries(data as Record<string, unknown>);
   }, [data, isObject]);
 
+  const handleLineMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.detail > 1) {
+      event.preventDefault();
+    }
+  };
+
   if (!isObject) {
+    const handleLeafDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      onLeafDoubleClick?.();
+    };
     return (
-      <div className={`tree-line ${lineDepthClass}`} style={lineStyle} data-depth={depth}>
+      <div
+        className={`tree-line ${lineDepthClass}`}
+        style={lineStyle}
+        data-depth={depth}
+        onMouseDown={handleLineMouseDown}
+        onDoubleClick={handleLeafDoubleClick}
+      >
         {name !== undefined && <span className="tree-key">{name}: </span>}
         <span className={typeClass(data)}>{formatPrimitive(data)}</span>
       </div>
@@ -93,10 +120,9 @@ export default function JsonTree({
   const closeSymbol = isArray ? "]" : "}";
   const preview = isArray ? `[${entries.length}]` : `{${entries.length}}`;
   const toggleOpen = () => setIsOpen((prev) => !prev);
-  const handleHeadMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (event.detail > 1) {
-      event.preventDefault();
-    }
+  const closeCurrentBlockAndFocus = () => {
+    focusOnCloseRef.current = true;
+    setIsOpen(false);
   };
   const handleHeadDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -109,10 +135,11 @@ export default function JsonTree({
         className={`tree-line ${lineDepthClass} tree-block-head`}
         style={lineStyle}
         data-depth={depth}
-        onMouseDown={handleHeadMouseDown}
+        onMouseDown={handleLineMouseDown}
         onDoubleClick={handleHeadDoubleClick}
       >
         <button
+          ref={toggleButtonRef}
           type="button"
           className="tree-toggle"
           onClick={toggleOpen}
@@ -137,6 +164,7 @@ export default function JsonTree({
               defaultExpandedDepth={defaultExpandedDepth}
               controlVersion={controlVersion}
               controlMode={controlMode}
+              onLeafDoubleClick={closeCurrentBlockAndFocus}
             />
           ))}
         </div>
