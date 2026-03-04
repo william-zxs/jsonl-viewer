@@ -320,6 +320,39 @@ body.modal-open {
   display: flex;
   gap: 0.45rem;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.icon-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #527782;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #1f3f51;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.icon-btn svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  background: #edf6fa;
+  border-color: #3d6671;
+  color: #15384a;
 }
 
 .line-title {
@@ -392,6 +425,7 @@ body.modal-open {
   gap: 0.45rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .line-fullscreen-content {

@@ -10,8 +10,6 @@ const line3Label = /第 3 行|Line 3/i;
 const cycleToLevel1Label = /当前页首层展开|Expand first level/i;
 const cycleToAllLabel = /当前页全部展开|Expand all levels/i;
 const cycleToCollapseLabel = /当前页全部折叠|Collapse all/i;
-const expandLineAllLabel = /展开该行全部|Expand all in line/i;
-const collapseLineAllLabel = /折叠该行全部|Collapse all in line/i;
 const fullscreenLabel = /全屏|Fullscreen/i;
 const fullscreenCloseLabel = /关闭全屏|Close fullscreen/i;
 const treeCopyLabel = /复制|Copy/i;
@@ -109,7 +107,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: cycleToLevel1Label })).toBeInTheDocument();
   });
 
-  it("支持单行内 JSON 树全部展开和全部折叠", async () => {
+  it("展开行后不再显示单行展开/折叠按钮", async () => {
     render(<App />);
 
     const input = screen.getByLabelText(pickFileLabel);
@@ -124,12 +122,8 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText(/c:/)).toBeInTheDocument();
     });
-
-    fireEvent.click(screen.getByRole("button", { name: expandLineAllLabel }));
-    expect(screen.getByText(/c:/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: collapseLineAllLabel }));
-    expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /展开该行全部|Expand all in line/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /折叠该行全部|Collapse all in line/i })).not.toBeInTheDocument();
   });
 
   it("支持单行 JSON 块全屏展示并可关闭", async () => {
@@ -152,13 +146,10 @@ describe("App", () => {
     const dialog = screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i });
     expect(dialog).toBeInTheDocument();
     expect(document.body).toHaveClass("modal-open");
-    expect(within(dialog).getByRole("button", { name: expandLineAllLabel })).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: collapseLineAllLabel })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /展开该行全部|Expand all in line/i })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /折叠该行全部|Collapse all in line/i })).not.toBeInTheDocument();
     expect(within(dialog).getByText(/a:/)).toBeInTheDocument();
     expect(within(dialog).getByText(/c:/)).toBeInTheDocument();
-
-    fireEvent.click(within(dialog).getByRole("button", { name: collapseLineAllLabel }));
-    expect(within(dialog).queryByText(/a:/)).not.toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: fullscreenCloseLabel }));
     expect(screen.queryByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i })).not.toBeInTheDocument();

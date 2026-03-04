@@ -51,10 +51,6 @@ export default function LineItem({
     setControlMode("expand");
     setControlVersion((v) => v + 1);
   };
-  const triggerCollapseAll = () => {
-    setControlMode("collapse");
-    setControlVersion((v) => v + 1);
-  };
   const openFullscreen = () => {
     triggerExpandAll();
     setIsFullscreen(true);
@@ -151,14 +147,15 @@ export default function LineItem({
         </button>
         {expanded && !line.error && (
           <div className="line-head-actions">
-            <button type="button" className="ghost-btn" onClick={triggerExpandAll}>
-              {t("expandLineAll")}
-            </button>
-            <button type="button" className="ghost-btn" onClick={triggerCollapseAll}>
-              {t("collapseLineAll")}
-            </button>
-            <button type="button" className="ghost-btn" onClick={openFullscreen}>
-              {t("fullscreen")}
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={openFullscreen}
+              aria-label={t("fullscreen")}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />
+              </svg>
             </button>
           </div>
         )}
@@ -188,20 +185,13 @@ export default function LineItem({
                       <div className="line-fullscreen-actions">
                         <button
                           type="button"
-                          className="ghost-btn"
-                          onClick={triggerExpandAll}
+                          className="icon-btn"
+                          onClick={() => setIsFullscreen(false)}
+                          aria-label={t("closeFullscreen")}
                         >
-                          {t("expandLineAll")}
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-btn"
-                          onClick={triggerCollapseAll}
-                        >
-                          {t("collapseLineAll")}
-                        </button>
-                        <button type="button" className="ghost-btn" onClick={() => setIsFullscreen(false)}>
-                          {t("closeFullscreen")}
+                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M6 6l12 12M18 6L6 18" />
+                          </svg>
                         </button>
                       </div>
                     </div>
