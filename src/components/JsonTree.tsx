@@ -53,10 +53,12 @@ export default function JsonTree({
   const safeDepth = Math.min(depth, 5);
   const lineDepthClass = `line-depth-${safeDepth}`;
   const blockDepthClass = `block-depth-${safeDepth}`;
-  const lineStyle = { paddingLeft: `${depth * 14}px` } as CSSProperties;
+  const leftPadding = depth * 14;
+  const blockLeftOffset = Math.max(0, leftPadding - 6);
+  const lineStyle = { paddingLeft: `${leftPadding}px` } as CSSProperties;
   const blockStyle = {
-    "--tree-offset": `${depth * 14}px`,
-    "--active-left": `${depth * 14}px`
+    "--tree-offset": `${blockLeftOffset}px`,
+    "--active-left": `${blockLeftOffset}px`
   } as CSSProperties;
   const isObject = typeof data === "object" && data !== null;
   const initialOpen =
