@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { TranslateFn } from "../lib/i18n";
 
 type JsonTreeProps = {
@@ -46,6 +47,10 @@ export default function JsonTree({
   controlVersion = 0,
   controlMode = null
 }: JsonTreeProps) {
+  const safeDepth = Math.min(depth, 5);
+  const lineDepthClass = `line-depth-${safeDepth}`;
+  const blockDepthClass = `block-depth-${safeDepth}`;
+  const lineStyle = { paddingLeft: `${depth * 14}px` } as CSSProperties;
   const isObject = typeof data === "object" && data !== null;
   const initialOpen =
     controlMode === "expand" ? true : controlMode === "collapse" ? false : depth < defaultExpandedDepth;
@@ -75,7 +80,7 @@ export default function JsonTree({
 
   if (!isObject) {
     return (
-      <div className="tree-line" style={{ paddingLeft: `${depth * 14}px` }}>
+      <div className={`tree-line ${lineDepthClass}`} style={lineStyle} data-depth={depth}>
         {name !== undefined && <span className="tree-key">{name}: </span>}
         <span className={typeClass(data)}>{formatPrimitive(data)}</span>
       </div>
@@ -88,8 +93,8 @@ export default function JsonTree({
   const preview = isArray ? `[${entries.length}]` : `{${entries.length}}`;
 
   return (
-    <div className="tree-block">
-      <div className="tree-line" style={{ paddingLeft: `${depth * 14}px` }}>
+    <div className={`tree-block ${blockDepthClass} ${isOpen ? "is-open" : "is-closed"}`} data-depth={depth}>
+      <div className={`tree-line ${lineDepthClass} tree-block-head`} style={lineStyle} data-depth={depth}>
         <button
           type="button"
           className="tree-toggle"
@@ -103,23 +108,27 @@ export default function JsonTree({
         {isOpen && <span className="tree-bracket">{openSymbol}</span>}
       </div>
 
-      {isOpen &&
-        entries.map(([key, value]) => (
-          <JsonTree
-            key={`${depth}-${key}`}
-            t={t}
-            data={value}
-            name={key}
-            depth={depth + 1}
-            defaultExpandedDepth={defaultExpandedDepth}
-            controlVersion={controlVersion}
-            controlMode={controlMode}
-          />
-        ))}
+      {isOpen && (
+        <div className="tree-children">
+          {entries.map(([key, value]) => (
+            <JsonTree
+              key={`${depth}-${key}`}
+              t={t}
+              data={value}
+              name={key}
+              depth={depth + 1}
+              defaultExpandedDepth={defaultExpandedDepth}
+              controlVersion={controlVersion}
+              controlMode={controlMode}
+            />
+          ))}
+        </div>
+      )}
 
       {isOpen && (
-        <div className="tree-line" style={{ paddingLeft: `${depth * 14}px` }}>
+        <div className={`tree-line ${lineDepthClass} tree-block-tail`} style={lineStyle} data-depth={depth}>
           <span className="tree-bracket">{closeSymbol}</span>
+          {name !== undefined && <span className="tree-end-hint">end: {name}</span>}
         </div>
       )}
     </div>
