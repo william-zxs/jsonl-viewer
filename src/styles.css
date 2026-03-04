@@ -369,6 +369,7 @@ body.modal-open {
 }
 
 .tree-line {
+  position: relative;
   display: flex;
   align-items: baseline;
   gap: 0.28rem;
@@ -382,14 +383,30 @@ body.modal-open {
   transition: background-color 0.15s ease;
 }
 
-.tree-line:hover {
-  background: var(--json-hover);
-  box-shadow: inset 0 0 0 1px var(--json-active-outline);
+.tree-line > * {
+  position: relative;
+  z-index: 1;
 }
 
-.tree-line:focus-within {
+.tree-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--active-left, 0px);
+  border-radius: 6px;
   background: var(--json-hover);
   box-shadow: inset 0 0 0 1px var(--json-active-outline);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.12s ease;
+}
+
+.tree-line:hover::after,
+.tree-line:focus-within::after {
+  opacity: 1;
 }
 
 .line-depth-1 {
@@ -423,13 +440,35 @@ body.modal-open {
 }
 
 .tree-block {
+  position: relative;
   border-radius: 8px;
   margin: 0.16rem 0;
 }
 
 .tree-block.is-open {
-  border: 1px solid #c8d8fb;
-  box-shadow: inset 4px 0 0 #8eaef5;
+  --block-bg: #fcfdff;
+  --block-border: #c8d8fb;
+  --block-accent: #8eaef5;
+}
+
+.tree-block.is-open::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--tree-offset, 0px);
+  border: 1px solid var(--block-border);
+  border-left: 4px solid var(--block-accent);
+  border-radius: 8px;
+  background: var(--block-bg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tree-block > * {
+  position: relative;
+  z-index: 1;
 }
 
 .tree-block.is-open .tree-line {
@@ -438,37 +477,47 @@ body.modal-open {
 }
 
 .tree-block.is-open .tree-line:hover {
-  background: var(--json-hover);
-  box-shadow: inset 0 0 0 1px var(--json-active-outline);
+  background: transparent;
 }
 
 .tree-block.is-open .tree-line:focus-within {
-  background: var(--json-hover);
-  box-shadow: inset 0 0 0 1px var(--json-active-outline);
+  background: transparent;
 }
 
 .block-depth-0.is-open {
-  background: #fcfdff;
+  --block-bg: #fcfdff;
+  --block-border: #d6e3ff;
+  --block-accent: #b6ccff;
 }
 
 .block-depth-1.is-open {
-  background: #f5f8ff;
+  --block-bg: #f5f8ff;
+  --block-border: #c9d9ff;
+  --block-accent: #a6c0ff;
 }
 
 .block-depth-2.is-open {
-  background: #e4eeff;
+  --block-bg: #e4eeff;
+  --block-border: #bad0ff;
+  --block-accent: #90b0ff;
 }
 
 .block-depth-3.is-open {
-  background: #d7e6ff;
+  --block-bg: #d7e6ff;
+  --block-border: #abc7ff;
+  --block-accent: #7a9fff;
 }
 
 .block-depth-4.is-open {
-  background: #cadfff;
+  --block-bg: #cadfff;
+  --block-border: #9abaff;
+  --block-accent: #678fff;
 }
 
 .block-depth-5.is-open {
-  background: #bdd6ff;
+  --block-bg: #bdd6ff;
+  --block-border: #88acff;
+  --block-accent: #557fff;
 }
 
 .tree-children {

@@ -54,6 +54,10 @@ export default function JsonTree({
   const lineDepthClass = `line-depth-${safeDepth}`;
   const blockDepthClass = `block-depth-${safeDepth}`;
   const lineStyle = { paddingLeft: `${depth * 14}px` } as CSSProperties;
+  const blockStyle = {
+    "--tree-offset": `${depth * 14}px`,
+    "--active-left": `${depth * 14}px`
+  } as CSSProperties;
   const isObject = typeof data === "object" && data !== null;
   const initialOpen =
     controlMode === "expand" ? true : controlMode === "collapse" ? false : depth < defaultExpandedDepth;
@@ -130,7 +134,11 @@ export default function JsonTree({
   };
 
   return (
-    <div className={`tree-block ${blockDepthClass} ${isOpen ? "is-open" : "is-closed"}`} data-depth={depth}>
+    <div
+      className={`tree-block ${blockDepthClass} ${isOpen ? "is-open" : "is-closed"}`}
+      data-depth={depth}
+      style={blockStyle}
+    >
       <div
         className={`tree-line ${lineDepthClass} tree-block-head`}
         style={lineStyle}
