@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import JsonTree from "./JsonTree";
 import type { ParsedLine } from "../lib/jsonl";
 import type { TranslateFn } from "../lib/i18n";
@@ -44,6 +45,8 @@ export default function LineItem({
   const [controlMode, setControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const prevPageControlVersion = useRef(pageControlVersion);
+  const suppressSingleClickRef = useRef(false);
+  const singleClickTimerRef = useRef<number | null>(null);
   const triggerExpandAll = () => {
     setControlMode("expand");
     setControlVersion((v) => v + 1);
@@ -55,6 +58,43 @@ export default function LineItem({
   const openFullscreen = () => {
     triggerExpandAll();
     setIsFullscreen(true);
+  };
+  const handleLineHeadClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (event.detail > 1) {
+      return;
+    }
+    if (singleClickTimerRef.current !== null) {
+      window.clearTimeout(singleClickTimerRef.current);
+    }
+    singleClickTimerRef.current = window.setTimeout(() => {
+      if (suppressSingleClickRef.current) {
+        suppressSingleClickRef.current = false;
+        singleClickTimerRef.current = null;
+        return;
+      }
+      if (expanded) {
+        onToggle(line.lineNumber);
+      } else {
+        triggerExpandAll();
+        onToggle(line.lineNumber);
+      }
+      singleClickTimerRef.current = null;
+    }, 0);
+  };
+  const handleLineHeadDoubleClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    suppressSingleClickRef.current = true;
+    if (singleClickTimerRef.current !== null) {
+      window.clearTimeout(singleClickTimerRef.current);
+      singleClickTimerRef.current = null;
+    }
+    if (line.error) {
+      return;
+    }
+    if (!expanded) {
+      onToggle(line.lineNumber);
+    }
+    openFullscreen();
   };
 
   useEffect(() => {
@@ -86,13 +126,23 @@ export default function LineItem({
     };
   }, [isFullscreen]);
 
+  useEffect(
+    () => () => {
+      if (singleClickTimerRef.current !== null) {
+        window.clearTimeout(singleClickTimerRef.current);
+      }
+    },
+    []
+  );
+
   return (
     <article className={`line-item ${line.error ? "line-error" : ""}`}>
       <div className="line-head">
         <button
           type="button"
           className="line-head-main"
-          onClick={() => onToggle(line.lineNumber)}
+          onClick={handleLineHeadClick}
+          onDoubleClick={handleLineHeadDoubleClick}
           aria-expanded={expanded}
         >
           <span className="line-title">{t("lineTitle", { lineNumber: line.lineNumber })}</span>

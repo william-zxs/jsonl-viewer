@@ -51,11 +51,36 @@ describe("App", () => {
     expect(screen.getByTestId("stat-failed")).toHaveTextContent("1");
 
     fireEvent.click(screen.getByRole("button", { name: line1Label }));
-    expect(screen.getByText(/a:/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/a:/)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: line1Label }));
+    await waitFor(() => {
+      expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "ERROR" }));
     expect(screen.getByText(line2Label)).toBeInTheDocument();
     expect(screen.queryByText(line1Label)).not.toBeInTheDocument();
+  });
+
+  it("支持双击行头直接进入该行全屏", async () => {
+    render(<App />);
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const file = makeJsonlFile(`{"a":{"b":{"c":1}}}\n{"x":2}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
+    });
+
+    fireEvent.doubleClick(screen.getByRole("button", { name: line1Label }));
+
+    const dialog = screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i });
+    expect(dialog).toBeInTheDocument();
+    expect(document.body).toHaveClass("modal-open");
+    expect(within(dialog).getByText(/c:/)).toBeInTheDocument();
   });
 
   it("支持当前页三态循环：首层展开、全部展开、全部折叠", async () => {
@@ -96,7 +121,9 @@ describe("App", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: line1Label }));
-    expect(screen.queryByText(/c:/)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/c:/)).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole("button", { name: expandLineAllLabel }));
     expect(screen.getByText(/c:/)).toBeInTheDocument();
@@ -117,6 +144,9 @@ describe("App", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: line1Label }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: fullscreenLabel })).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByRole("button", { name: fullscreenLabel }));
 
     const dialog = screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i });
@@ -217,7 +247,7 @@ describe("App", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: line1Label }));
-    const copyButton = screen.getAllByRole("button", { name: treeCopyLabel })[0];
+    const copyButton = await waitFor(() => screen.getAllByRole("button", { name: treeCopyLabel })[0]);
 
     fireEvent.click(copyButton);
 
