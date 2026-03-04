@@ -231,4 +231,20 @@ describe("App", () => {
       expect(screen.getAllByRole("button", { name: treeCopyLabel }).length).toBeGreaterThanOrEqual(2);
     }, { timeout: 3000 });
   });
+
+  it("每行 header 展示字符数，中文按单字符计数", async () => {
+    render(<App />);
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const rawLine = `{"msg":"你好abc"}`;
+    const file = makeJsonlFile(`${rawLine}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("1");
+    });
+
+    const expectedCount = Array.from(rawLine).length;
+    expect(screen.getByText(new RegExp(`字符\\s*${expectedCount}|${expectedCount}\\s*字符`))).toBeInTheDocument();
+  });
 });

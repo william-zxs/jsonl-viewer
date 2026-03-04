@@ -37,6 +37,7 @@ export type MessageKey =
   | "lineSummaryParseFailed"
   | "lineSummaryArray"
   | "lineSummaryObject"
+  | "lineCharCount"
   | "expandLineAll"
   | "collapseLineAll"
   | "fullscreen"
@@ -91,6 +92,7 @@ const messages: Record<Locale, Messages> = {
     lineSummaryParseFailed: "解析失败",
     lineSummaryArray: "数组({count})",
     lineSummaryObject: "对象({count}键)",
+    lineCharCount: "{count}字符",
     expandLineAll: "展开该行全部",
     collapseLineAll: "折叠该行全部",
     fullscreen: "全屏",
@@ -138,6 +140,7 @@ const messages: Record<Locale, Messages> = {
     lineSummaryParseFailed: "Parse failed",
     lineSummaryArray: "Array ({count})",
     lineSummaryObject: "Object ({count} keys)",
+    lineCharCount: "{count} chars",
     expandLineAll: "Expand all in line",
     collapseLineAll: "Collapse all in line",
     fullscreen: "Fullscreen",

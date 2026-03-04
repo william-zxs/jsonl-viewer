@@ -12,20 +12,22 @@ type LineItemProps = {
   pageControlMode?: "expand" | "collapse" | "reset" | null;
 };
 
-function summarize(t: TranslateFn, parsed: unknown | null, error: string | null): string {
+function summarize(t: TranslateFn, raw: string, parsed: unknown | null, error: string | null): string {
+  const charCount = Array.from(raw).length;
+  const charCountText = t("lineCharCount", { count: charCount });
   if (error) {
-    return t("lineSummaryParseFailed");
+    return `${t("lineSummaryParseFailed")} · ${charCountText}`;
   }
   if (parsed === null) {
-    return "null";
+    return `null · ${charCountText}`;
   }
   if (Array.isArray(parsed)) {
-    return t("lineSummaryArray", { count: parsed.length });
+    return `${t("lineSummaryArray", { count: parsed.length })} · ${charCountText}`;
   }
   if (typeof parsed === "object") {
-    return t("lineSummaryObject", { count: Object.keys(parsed as Record<string, unknown>).length });
+    return `${t("lineSummaryObject", { count: Object.keys(parsed as Record<string, unknown>).length })} · ${charCountText}`;
   }
-  return typeof parsed;
+  return `${typeof parsed} · ${charCountText}`;
 }
 
 export default function LineItem({
@@ -37,7 +39,7 @@ export default function LineItem({
   pageControlMode = null
 }: LineItemProps) {
   const status = line.error ? "ERROR" : "OK";
-  const summary = summarize(t, line.parsed, line.error);
+  const summary = summarize(t, line.raw, line.parsed, line.error);
   const [controlVersion, setControlVersion] = useState(0);
   const [controlMode, setControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
