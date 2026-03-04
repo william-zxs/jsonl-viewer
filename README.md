@@ -4,6 +4,10 @@
 
 A browser-based JSONL viewer built with React + Vite, designed to help analyze agent-generated JSONL logs.
 
+## Preview
+
+![JSON tree node hover highlight](./docs/images/json-tree-node-hover-highlight.png)
+
 ## Features
 
 - Drag and drop a `jsonl` file (or click to choose one)

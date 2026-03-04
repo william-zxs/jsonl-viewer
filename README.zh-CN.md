@@ -4,6 +4,10 @@
 
 一个基于 React + Vite 的浏览器端 JSONL 查看器，用于方便分析 Agent 生成的 JSONL 日志。
 
+## 界面预览
+
+![JSON 树节点悬浮高亮](./docs/images/json-tree-node-hover-highlight.png)
+
 ## 功能
 
 - 支持拖拽上传 `jsonl` 文件（也支持点击选择）
