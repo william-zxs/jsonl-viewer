@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import JsonTree from "./JsonTree";
 import type { ParsedLine } from "../lib/jsonl";
 import type { TranslateFn } from "../lib/i18n";
@@ -8,6 +8,8 @@ type LineItemProps = {
   line: ParsedLine;
   expanded: boolean;
   onToggle: (lineNumber: number) => void;
+  pageControlVersion?: number;
+  pageControlMode?: "expand" | "collapse" | "reset" | null;
 };
 
 function summarize(t: TranslateFn, parsed: unknown | null, error: string | null): string {
@@ -26,12 +28,20 @@ function summarize(t: TranslateFn, parsed: unknown | null, error: string | null)
   return typeof parsed;
 }
 
-export default function LineItem({ t, line, expanded, onToggle }: LineItemProps) {
+export default function LineItem({
+  t,
+  line,
+  expanded,
+  onToggle,
+  pageControlVersion = 0,
+  pageControlMode = null
+}: LineItemProps) {
   const status = line.error ? "ERROR" : "OK";
   const summary = summarize(t, line.parsed, line.error);
   const [controlVersion, setControlVersion] = useState(0);
-  const [controlMode, setControlMode] = useState<"expand" | "collapse" | null>(null);
+  const [controlMode, setControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const prevPageControlVersion = useRef(pageControlVersion);
   const triggerExpandAll = () => {
     setControlMode("expand");
     setControlVersion((v) => v + 1);
@@ -40,6 +50,14 @@ export default function LineItem({ t, line, expanded, onToggle }: LineItemProps)
     setControlMode("collapse");
     setControlVersion((v) => v + 1);
   };
+
+  useEffect(() => {
+    if (pageControlVersion !== prevPageControlVersion.current && pageControlMode) {
+      setControlMode(pageControlMode);
+      setControlVersion((v) => v + 1);
+      prevPageControlVersion.current = pageControlVersion;
+    }
+  }, [pageControlMode, pageControlVersion]);
 
   useEffect(() => {
     if (!isFullscreen) {

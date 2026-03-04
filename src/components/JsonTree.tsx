@@ -10,7 +10,7 @@ type JsonTreeProps = {
   depth?: number;
   defaultExpandedDepth?: number;
   controlVersion?: number;
-  controlMode?: "expand" | "collapse" | null;
+  controlMode?: "expand" | "collapse" | "reset" | null;
   onLeafDoubleClick?: () => void;
 };
 
@@ -62,7 +62,11 @@ export default function JsonTree({
   } as CSSProperties;
   const isObject = typeof data === "object" && data !== null;
   const initialOpen =
-    controlMode === "expand" ? true : controlMode === "collapse" ? false : depth < defaultExpandedDepth;
+    controlMode === "expand"
+      ? true
+      : controlMode === "collapse"
+        ? false
+        : depth < defaultExpandedDepth;
   const [isOpen, setIsOpen] = useState(initialOpen);
   const prevControlVersion = useRef(controlVersion);
   const toggleButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -74,10 +78,12 @@ export default function JsonTree({
         setIsOpen(true);
       } else if (controlMode === "collapse") {
         setIsOpen(false);
+      } else if (controlMode === "reset") {
+        setIsOpen(depth < defaultExpandedDepth);
       }
       prevControlVersion.current = controlVersion;
     }
-  }, [controlMode, controlVersion]);
+  }, [controlMode, controlVersion, defaultExpandedDepth, depth]);
 
   useEffect(() => {
     if (!isOpen && focusOnCloseRef.current) {

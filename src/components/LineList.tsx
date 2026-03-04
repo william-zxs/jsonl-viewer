@@ -10,8 +10,10 @@ type LineListProps = {
   expandedLineSet: Set<number>;
   onToggleLine: (lineNumber: number) => void;
   onPageChange: (page: number) => void;
-  onExpandCurrentPage: () => void;
-  onCollapseCurrentPage: () => void;
+  currentPageViewStage: 0 | 1 | 2;
+  onCycleCurrentPageView: () => void;
+  pageTreeControlVersion: number;
+  pageTreeControlMode: "expand" | "collapse" | "reset" | null;
 };
 
 export default function LineList({
@@ -22,13 +24,22 @@ export default function LineList({
   expandedLineSet,
   onToggleLine,
   onPageChange,
-  onExpandCurrentPage,
-  onCollapseCurrentPage
+  currentPageViewStage,
+  onCycleCurrentPageView,
+  pageTreeControlVersion,
+  pageTreeControlMode
 }: LineListProps) {
   const totalPages = Math.max(1, Math.ceil(lines.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
   const pageItems = lines.slice(startIndex, startIndex + pageSize);
+  const cycleBtnLabel =
+    currentPageViewStage === 0
+      ? t("pageViewToLevel1")
+      : currentPageViewStage === 1
+        ? t("pageViewToAll")
+        : t("pageViewToCollapse");
+  const cycleBtnClass = `ghost-btn page-cycle-btn stage-${currentPageViewStage}`;
 
   return (
     <section className="line-list">
@@ -37,11 +48,13 @@ export default function LineList({
           {t("showingCount", { pageCount: pageItems.length, total: lines.length })}
         </span>
         <div className="toolbar-actions">
-          <button type="button" className="ghost-btn" onClick={onExpandCurrentPage}>
-            {t("expandCurrentPage")}
-          </button>
-          <button type="button" className="ghost-btn" onClick={onCollapseCurrentPage}>
-            {t("collapseCurrentPage")}
+          <button
+            type="button"
+            className={cycleBtnClass}
+            onClick={onCycleCurrentPageView}
+            disabled={pageItems.length === 0}
+          >
+            {cycleBtnLabel}
           </button>
         </div>
       </div>
@@ -55,6 +68,8 @@ export default function LineList({
           line={line}
           expanded={expandedLineSet.has(line.lineNumber)}
           onToggle={onToggleLine}
+          pageControlVersion={pageTreeControlVersion}
+          pageControlMode={pageTreeControlMode}
         />
       ))}
 

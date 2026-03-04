@@ -7,6 +7,9 @@ const pickFileLabel = /选择 JSONL 文件|Select JSONL file/i;
 const line1Label = /第 1 行|Line 1/i;
 const line2Label = /第 2 行|Line 2/i;
 const line3Label = /第 3 行|Line 3/i;
+const cycleToLevel1Label = /当前页首层展开|Expand first level/i;
+const cycleToAllLabel = /当前页全部展开|Expand all levels/i;
+const cycleToCollapseLabel = /当前页全部折叠|Collapse all/i;
 const expandLineAllLabel = /展开该行全部|Expand all in line/i;
 const collapseLineAllLabel = /折叠该行全部|Collapse all in line/i;
 const fullscreenLabel = /全屏|Fullscreen/i;
@@ -53,26 +56,30 @@ describe("App", () => {
     expect(screen.queryByText(line1Label)).not.toBeInTheDocument();
   });
 
-  it("支持展开当前页全部和折叠当前页全部", async () => {
+  it("支持当前页三态循环：首层展开、全部展开、全部折叠", async () => {
     render(<App />);
 
     const input = screen.getByLabelText(pickFileLabel);
-    const file = makeJsonlFile(`{"a":1}\nnot-json\n{"b":2}\n`);
+    const file = makeJsonlFile(`{"a":{"b":{"c":1}}}\n{"x":{"y":2}}\n`);
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByTestId("stat-total")).toHaveTextContent("3");
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /展开当前页全部|Expand current page/i }));
+    fireEvent.click(screen.getByRole("button", { name: cycleToLevel1Label }));
     expect(screen.getByText(/a:/)).toBeInTheDocument();
-    expect(screen.getByText(/b:/)).toBeInTheDocument();
-    expect(screen.getByText(errorPrefix)).toBeInTheDocument();
+    expect(screen.queryByText(/c:/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: cycleToAllLabel })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /折叠当前页全部|Collapse current page/i }));
+    fireEvent.click(screen.getByRole("button", { name: cycleToAllLabel }));
+    expect(screen.getByText(/c:/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: cycleToCollapseLabel })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: cycleToCollapseLabel }));
     expect(screen.queryByText(/a:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/b:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(errorPrefix)).not.toBeInTheDocument();
+    expect(screen.queryByText(/x:/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: cycleToLevel1Label })).toBeInTheDocument();
   });
 
   it("支持单行内 JSON 树全部展开和全部折叠", async () => {

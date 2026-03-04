@@ -14,6 +14,7 @@ import {
 const PAGE_SIZE = 200;
 
 type FilterType = "all" | "ok" | "error";
+type PageViewStage = 0 | 1 | 2;
 
 export default function App() {
   const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale());
@@ -25,6 +26,9 @@ export default function App() {
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedLineSet, setExpandedLineSet] = useState<Set<number>>(new Set());
+  const [currentPageViewStage, setCurrentPageViewStage] = useState<PageViewStage>(0);
+  const [pageTreeControlVersion, setPageTreeControlVersion] = useState(0);
+  const [pageTreeControlMode, setPageTreeControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
   const t: TranslateFn = (key, params) => translateMessage(locale, key, params);
 
   useEffect(() => {
@@ -73,6 +77,9 @@ export default function App() {
     setFileName(name);
     setCurrentPage(1);
     setExpandedLineSet(new Set());
+    setCurrentPageViewStage(0);
+    setPageTreeControlMode(null);
+    setPageTreeControlVersion(0);
     setLines(parseJsonl(text));
   };
 
@@ -102,24 +109,43 @@ export default function App() {
     });
   };
 
-  const collapseCurrentPage = () => {
+  const setCurrentPageExpanded = (expanded: boolean) => {
     const start = (safePage - 1) * PAGE_SIZE;
     const pageLineNumbers = filteredLineNumbers.slice(start, start + PAGE_SIZE);
     setExpandedLineSet((prev) => {
       const next = new Set(prev);
-      pageLineNumbers.forEach((lineNumber) => next.delete(lineNumber));
+      pageLineNumbers.forEach((lineNumber) => {
+        if (expanded) {
+          next.add(lineNumber);
+        } else {
+          next.delete(lineNumber);
+        }
+      });
       return next;
     });
   };
 
-  const expandCurrentPage = () => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    const pageLineNumbers = filteredLineNumbers.slice(start, start + PAGE_SIZE);
-    setExpandedLineSet((prev) => {
-      const next = new Set(prev);
-      pageLineNumbers.forEach((lineNumber) => next.add(lineNumber));
-      return next;
-    });
+  const triggerPageTreeControl = (mode: "expand" | "collapse" | "reset") => {
+    setPageTreeControlMode(mode);
+    setPageTreeControlVersion((version) => version + 1);
+  };
+
+  const cycleCurrentPageView = () => {
+    if (currentPageViewStage === 0) {
+      setCurrentPageExpanded(true);
+      triggerPageTreeControl("reset");
+      setCurrentPageViewStage(1);
+      return;
+    }
+    if (currentPageViewStage === 1) {
+      setCurrentPageExpanded(true);
+      triggerPageTreeControl("expand");
+      setCurrentPageViewStage(2);
+      return;
+    }
+    setCurrentPageExpanded(false);
+    triggerPageTreeControl("collapse");
+    setCurrentPageViewStage(0);
   };
 
   const handleTryExample = () => {
@@ -187,6 +213,7 @@ export default function App() {
           onClick={() => {
             setFilter("all");
             setCurrentPage(1);
+            setCurrentPageViewStage(0);
           }}
         >
           {t("filterAll")}
@@ -197,6 +224,7 @@ export default function App() {
           onClick={() => {
             setFilter("ok");
             setCurrentPage(1);
+            setCurrentPageViewStage(0);
           }}
         >
           {t("filterOk")}
@@ -207,6 +235,7 @@ export default function App() {
           onClick={() => {
             setFilter("error");
             setCurrentPage(1);
+            setCurrentPageViewStage(0);
           }}
         >
           {t("filterError")}
@@ -220,6 +249,7 @@ export default function App() {
           onChange={(event) => {
             setKeyword(event.target.value);
             setCurrentPage(1);
+            setCurrentPageViewStage(0);
           }}
         />
       </section>
@@ -234,9 +264,14 @@ export default function App() {
         currentPage={safePage}
         expandedLineSet={expandedLineSet}
         onToggleLine={toggleLine}
-        onPageChange={setCurrentPage}
-        onExpandCurrentPage={expandCurrentPage}
-        onCollapseCurrentPage={collapseCurrentPage}
+        onPageChange={(page) => {
+          setCurrentPage(page);
+          setCurrentPageViewStage(0);
+        }}
+        currentPageViewStage={currentPageViewStage}
+        onCycleCurrentPageView={cycleCurrentPageView}
+        pageTreeControlVersion={pageTreeControlVersion}
+        pageTreeControlMode={pageTreeControlMode}
       />
     </div>
   );

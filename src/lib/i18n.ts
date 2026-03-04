@@ -27,8 +27,9 @@ export type MessageKey =
   | "dropSub"
   | "tryExample"
   | "showingCount"
-  | "expandCurrentPage"
-  | "collapseCurrentPage"
+  | "pageViewToLevel1"
+  | "pageViewToAll"
+  | "pageViewToCollapse"
   | "emptyState"
   | "prevPage"
   | "nextPage"
@@ -78,8 +79,9 @@ const messages: Record<Locale, Messages> = {
     dropSub: "或点击选择文件",
     tryExample: "试用示例",
     showingCount: "当前显示 {pageCount} / {total}",
-    expandCurrentPage: "展开当前页全部",
-    collapseCurrentPage: "折叠当前页全部",
+    pageViewToLevel1: "当前页首层展开",
+    pageViewToAll: "当前页全部展开",
+    pageViewToCollapse: "当前页全部折叠",
     emptyState: "暂无数据",
     prevPage: "上一页",
     nextPage: "下一页",
@@ -122,8 +124,9 @@ const messages: Record<Locale, Messages> = {
     dropSub: "or click to choose a file",
     tryExample: "Try Example",
     showingCount: "Showing {pageCount} / {total}",
-    expandCurrentPage: "Expand current page",
-    collapseCurrentPage: "Collapse current page",
+    pageViewToLevel1: "Expand first level",
+    pageViewToAll: "Expand all levels",
+    pageViewToCollapse: "Collapse all",
     emptyState: "No data",
     prevPage: "Previous",
     nextPage: "Next",
