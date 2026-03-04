@@ -134,6 +134,10 @@ export default function JsonTree({
     event.preventDefault();
     toggleOpen();
   };
+  const handleTailDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    closeCurrentBlockAndFocus();
+  };
 
   return (
     <div
@@ -181,7 +185,13 @@ export default function JsonTree({
       )}
 
       {isOpen && (
-        <div className={`tree-line ${lineDepthClass} tree-block-tail`} style={lineStyle} data-depth={depth}>
+        <div
+          className={`tree-line ${lineDepthClass} tree-block-tail`}
+          style={lineStyle}
+          data-depth={depth}
+          onMouseDown={handleLineMouseDown}
+          onDoubleClick={handleTailDoubleClick}
+        >
           <span className="tree-bracket">{closeSymbol}</span>
           {name !== undefined && <span className="tree-end-hint">end: {name}</span>}
         </div>

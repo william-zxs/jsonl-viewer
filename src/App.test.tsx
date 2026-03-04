@@ -12,6 +12,7 @@ const collapseLineAllLabel = /折叠该行全部|Collapse all in line/i;
 const fullscreenLabel = /全屏|Fullscreen/i;
 const fullscreenCloseLabel = /关闭全屏|Close fullscreen/i;
 const searchLabel = /全文检索|Search full text/i;
+const tryExampleLabel = /试用示例|Try Example/i;
 const emptyLabel = /暂无数据|No data/i;
 const errorPrefix = /错误:|Error:/i;
 
@@ -177,5 +178,18 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Line 1/i })).toBeInTheDocument();
     });
+  });
+
+  it("支持点击 Try Example 加载示例文件", async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: tryExampleLabel }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("5");
+    });
+
+    expect(screen.getByText("example_agent_session.jsonl")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: line1Label })).toBeInTheDocument();
   });
 });

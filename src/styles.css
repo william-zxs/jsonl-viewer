@@ -123,6 +123,18 @@ body.modal-open {
   display: none;
 }
 
+.example-row {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.example-btn {
+  border-color: #4d7598;
+  background: rgba(255, 255, 255, 0.84);
+  font-weight: 600;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr));

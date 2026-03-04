@@ -25,6 +25,7 @@ export type MessageKey =
   | "pickFileAria"
   | "dropMain"
   | "dropSub"
+  | "tryExample"
   | "showingCount"
   | "expandCurrentPage"
   | "collapseCurrentPage"
@@ -75,6 +76,7 @@ const messages: Record<Locale, Messages> = {
     pickFileAria: "选择 JSONL 文件",
     dropMain: "拖拽 JSONL 文件到这里",
     dropSub: "或点击选择文件",
+    tryExample: "试用示例",
     showingCount: "当前显示 {pageCount} / {total}",
     expandCurrentPage: "展开当前页全部",
     collapseCurrentPage: "折叠当前页全部",
@@ -118,6 +120,7 @@ const messages: Record<Locale, Messages> = {
     pickFileAria: "Select JSONL file",
     dropMain: "Drop your JSONL file here",
     dropSub: "or click to choose a file",
+    tryExample: "Try Example",
     showingCount: "Showing {pageCount} / {total}",
     expandCurrentPage: "Expand current page",
     collapseCurrentPage: "Collapse current page",

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import DropZone from "./components/DropZone";
 import LineList from "./components/LineList";
 import { parseJsonl, type ParsedLine } from "./lib/jsonl";
+import exampleAgentSession from "../examples/example_agent_session.jsonl?raw";
 import {
   LOCALE_STORAGE_KEY,
   resolveInitialLocale,
@@ -67,15 +68,19 @@ export default function App() {
   const totalPages = Math.max(1, Math.ceil(filteredLineNumbers.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
 
-  const handleFile = async (file: File) => {
-    setIsParsing(true);
+  const loadJsonlText = (name: string, text: string) => {
     setErrorMessage("");
-    setFileName(file.name);
+    setFileName(name);
     setCurrentPage(1);
     setExpandedLineSet(new Set());
+    setLines(parseJsonl(text));
+  };
+
+  const handleFile = async (file: File) => {
+    setIsParsing(true);
     try {
       const text = await file.text();
-      setLines(parseJsonl(text));
+      loadJsonlText(file.name, text);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("readFileFailedUnknown");
       setLines([]);
@@ -117,6 +122,10 @@ export default function App() {
     });
   };
 
+  const handleTryExample = () => {
+    loadJsonlText("example_agent_session.jsonl", exampleAgentSession);
+  };
+
   return (
     <div className="app-shell">
       <header className="top-panel">
@@ -146,6 +155,11 @@ export default function App() {
       </header>
 
       <DropZone onFile={handleFile} disabled={isParsing} t={t} />
+      <div className="example-row">
+        <button type="button" className="ghost-btn example-btn" onClick={handleTryExample} disabled={isParsing}>
+          {t("tryExample")}
+        </button>
+      </div>
 
       <section className="stats-grid">
         <div className="stat-card">
