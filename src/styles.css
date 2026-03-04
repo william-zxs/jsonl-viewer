@@ -12,9 +12,7 @@
   --json-active-outline: #e5b24a;
   --json-text-main: #1f2937;
   --json-text-muted: #64748b;
-  background: radial-gradient(circle at 15% 10%, #ffd56f 0%, transparent 30%),
-    radial-gradient(circle at 85% 0%, #79d5c5 0%, transparent 35%),
-    linear-gradient(145deg, #fffef7 0%, #eef7ff 100%);
+  background: transparent;
 }
 
 * {
@@ -24,6 +22,19 @@
 body {
   margin: 0;
   min-height: 100vh;
+  position: relative;
+  background: #fffef7;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle at 15% 10%, #ffd56f 0%, transparent 30%),
+    radial-gradient(circle at 85% 0%, #79d5c5 0%, transparent 35%),
+    linear-gradient(145deg, #fffef7 0%, #eef7ff 100%);
 }
 
 body.modal-open {
@@ -33,6 +44,8 @@ body.modal-open {
 
 #root {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 .app-shell {
