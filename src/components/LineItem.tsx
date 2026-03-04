@@ -53,9 +53,6 @@ export default function LineItem({
   };
   const openFullscreen = () => {
     triggerExpandAll();
-    if (!expanded) {
-      onToggle(line.lineNumber);
-    }
     setIsFullscreen(true);
   };
   const handleLineHeadClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
@@ -169,40 +166,38 @@ export default function LineItem({
               <pre className="raw-line">{line.raw}</pre>
             </>
           ) : (
-            <>
-              <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} t={t} />
-              {isFullscreen && (
-                <div
-                  className="line-fullscreen-overlay"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label={t("fullscreenDialogLabel", { lineNumber: line.lineNumber })}
-                  onClick={() => setIsFullscreen(false)}
-                >
-                  <div className="line-fullscreen-panel" onClick={(event) => event.stopPropagation()}>
-                    <div className="line-fullscreen-header">
-                      <strong>{t("fullscreenTitle", { lineNumber: line.lineNumber })}</strong>
-                      <div className="line-fullscreen-actions">
-                        <button
-                          type="button"
-                          className="icon-btn"
-                          onClick={() => setIsFullscreen(false)}
-                          aria-label={t("closeFullscreen")}
-                        >
-                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <path d="M6 6l12 12M18 6L6 18" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                    <div className="line-fullscreen-content">
-                      <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} t={t} />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
+            <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} t={t} />
           )}
+        </div>
+      )}
+      {!line.error && isFullscreen && (
+        <div
+          className="line-fullscreen-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("fullscreenDialogLabel", { lineNumber: line.lineNumber })}
+          onClick={() => setIsFullscreen(false)}
+        >
+          <div className="line-fullscreen-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="line-fullscreen-header">
+              <strong>{t("fullscreenTitle", { lineNumber: line.lineNumber })}</strong>
+              <div className="line-fullscreen-actions">
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => setIsFullscreen(false)}
+                  aria-label={t("closeFullscreen")}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="line-fullscreen-content">
+              <JsonTree data={line.parsed} controlVersion={controlVersion} controlMode={controlMode} t={t} />
+            </div>
+          </div>
         </div>
       )}
     </article>

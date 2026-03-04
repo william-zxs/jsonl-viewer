@@ -179,6 +179,7 @@ describe("App", () => {
     const dialog = screen.getByRole("dialog", { name: /第 1 行 JSON 全屏|Line 1 JSON Fullscreen/i });
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: fullscreenCloseLabel })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: line1Label })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("支持全文检索并可与状态过滤组合", async () => {
