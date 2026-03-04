@@ -227,11 +227,12 @@ export default function JsonTree({
         <button
           ref={toggleButtonRef}
           type="button"
-          className="tree-toggle"
+          className="tree-level-toggle"
           onClick={toggleOpen}
           aria-label={isOpen ? t("treeCollapseNode") : t("treeExpandNode")}
+          aria-expanded={isOpen}
         >
-          {isOpen ? "▾" : "▸"}
+          {depth}
         </button>
         <div className="tree-head-main">
           {name !== undefined && <span className="tree-key">{name}: </span>}
