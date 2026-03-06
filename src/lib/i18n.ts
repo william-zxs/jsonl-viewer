@@ -34,6 +34,10 @@ export type MessageKey =
   | "aiKeyPlaceholder"
   | "aiModelLabel"
   | "aiModelPlaceholder"
+  | "aiModelsLoading"
+  | "aiModelsReady"
+  | "aiModelsErrorPrefix"
+  | "aiFreeOnlyHint"
   | "aiGenerate"
   | "aiGenerating"
   | "aiReadyAuto"
@@ -101,7 +105,11 @@ const messages: Record<Locale, Messages> = {
     aiKeyLabel: "OpenRouter API Key",
     aiKeyPlaceholder: "输入 sk-or-v1-...",
     aiModelLabel: "模型",
-    aiModelPlaceholder: "例如 openai/gpt-5-nano",
+    aiModelPlaceholder: "仅展示免费模型",
+    aiModelsLoading: "正在加载免费模型...",
+    aiModelsReady: "已加载 {count} 个免费模型选项",
+    aiModelsErrorPrefix: "免费模型列表加载失败: {message}",
+    aiFreeOnlyHint: "已自动筛选 OpenRouter 免费模型",
     aiGenerate: "生成标签",
     aiGenerating: "正在生成标签...",
     aiReadyAuto: "已启用自动标签",
@@ -162,7 +170,11 @@ const messages: Record<Locale, Messages> = {
     aiKeyLabel: "OpenRouter API Key",
     aiKeyPlaceholder: "Enter sk-or-v1-...",
     aiModelLabel: "Model",
-    aiModelPlaceholder: "For example openai/gpt-5-nano",
+    aiModelPlaceholder: "Free models only",
+    aiModelsLoading: "Loading free models...",
+    aiModelsReady: "{count} free model options loaded",
+    aiModelsErrorPrefix: "Failed to load free models: {message}",
+    aiFreeOnlyHint: "Only OpenRouter free models are shown",
     aiGenerate: "Generate Tags",
     aiGenerating: "Generating tags...",
     aiReadyAuto: "Auto-tagging enabled",

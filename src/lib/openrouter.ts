@@ -3,6 +3,10 @@ import type { Locale } from "./i18n";
 import type { ParsedLine } from "./jsonl";
 
 export type LineTagMap = Record<number, string>;
+export type FreeModelOption = {
+  id: string;
+  name: string;
+};
 
 type SummarizeJsonLineTagsParams = {
   apiKey: string;
@@ -12,10 +16,52 @@ type SummarizeJsonLineTagsParams = {
   signal?: AbortSignal;
 };
 
+type LoadFreeModelOptionsParams = {
+  apiKey?: string;
+  signal?: AbortSignal;
+};
+
 const FALLBACK_LABEL: Record<Locale, string> = {
   zh: "未分类",
   en: "Uncategorized"
 };
+
+export const OPENROUTER_FREE_ROUTER_MODEL = "openrouter/free";
+
+function createClient(apiKey?: string): OpenRouter {
+  return new OpenRouter({
+    apiKey,
+    httpReferer: typeof window === "undefined" ? undefined : window.location.origin,
+    xTitle: "JSONL Viewer"
+  });
+}
+
+export function isAbortLikeError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return true;
+  }
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /abort/i.test(error.name) || /aborted|aborterror|signal is aborted/i.test(error.message);
+}
+
+function shouldRetry(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /provider returned error|rate limit|too many requests|timeout|temporarily unavailable|5\d\d/i.test(
+    error.message
+  );
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 function buildInstructions(locale: Locale): string {
   if (locale === "zh") {
@@ -55,19 +101,40 @@ async function summarizeSingleLine(
   line: ParsedLine,
   signal?: AbortSignal
 ): Promise<string> {
-  const result = client.callModel(
-    {
-      model,
-      instructions: buildInstructions(locale),
-      input: `Line ${line.lineNumber}\n${line.raw}`,
-      temperature: 0,
-      maxOutputTokens: 32
-    },
-    { signal }
-  );
+  let attempt = 0;
 
-  const text = await result.getText();
-  return normalizeLabel(text, locale);
+  while (attempt < 3) {
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+
+    try {
+      const result = client.callModel(
+        {
+          model,
+          instructions: buildInstructions(locale),
+          input: `Line ${line.lineNumber}\n${line.raw}`,
+          temperature: 0,
+          maxOutputTokens: 32
+        },
+        { signal }
+      );
+
+      const text = await result.getText();
+      return normalizeLabel(text, locale);
+    } catch (error) {
+      if (isAbortLikeError(error)) {
+        throw error;
+      }
+      attempt += 1;
+      if (attempt >= 3 || !shouldRetry(error)) {
+        throw error;
+      }
+      await sleep(400 * attempt);
+    }
+  }
+
+  return FALLBACK_LABEL[locale];
 }
 
 export async function summarizeJsonLineTags({
@@ -77,14 +144,11 @@ export async function summarizeJsonLineTags({
   lines,
   signal
 }: SummarizeJsonLineTagsParams): Promise<LineTagMap> {
-  const client = new OpenRouter({
-    apiKey,
-    httpReferer: typeof window === "undefined" ? undefined : window.location.origin,
-    xTitle: "JSONL Viewer"
-  });
+  const client = createClient(apiKey);
   const validLines = lines.filter((line) => !line.error);
   const tags: LineTagMap = {};
-  const concurrency = 3;
+  const isFreeModel = model === OPENROUTER_FREE_ROUTER_MODEL || model.endsWith(":free");
+  const concurrency = isFreeModel ? 1 : 2;
   let cursor = 0;
 
   async function worker() {
@@ -105,4 +169,27 @@ export async function summarizeJsonLineTags({
   );
 
   return tags;
+}
+
+export async function loadOpenRouterFreeModels({
+  apiKey,
+  signal
+}: LoadFreeModelOptionsParams = {}): Promise<FreeModelOption[]> {
+  const client = createClient(apiKey);
+  const response = await client.models.list(undefined, { signal });
+  const freeModels = response.data
+    .filter((model) => model.id.endsWith(":free"))
+    .map((model) => ({
+      id: model.id,
+      name: model.name
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+
+  return [
+    {
+      id: OPENROUTER_FREE_ROUTER_MODEL,
+      name: "OpenRouter Free Router"
+    },
+    ...freeModels
+  ];
 }

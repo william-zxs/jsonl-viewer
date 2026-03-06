@@ -225,6 +225,19 @@ body.modal-open {
   margin-top: 0.7rem;
 }
 
+.ai-panel-meta {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+  color: #50616d;
+  font-size: 0.88rem;
+}
+
+.ai-panel-error-text {
+  color: #9f1d1d;
+}
+
 .page-cycle-btn {
   min-width: 9.4rem;
   font-weight: 700;
@@ -923,6 +936,11 @@ body.modal-open {
   .ai-panel-grid {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .ai-panel-meta {
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
   .line-head {

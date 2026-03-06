@@ -2,10 +2,17 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { LOCALE_STORAGE_KEY } from "./lib/i18n";
-import { summarizeJsonLineTags } from "./lib/openrouter";
+import {
+  isAbortLikeError,
+  loadOpenRouterFreeModels,
+  summarizeJsonLineTags
+} from "./lib/openrouter";
 
 vi.mock("./lib/openrouter", () => ({
-  summarizeJsonLineTags: vi.fn()
+  summarizeJsonLineTags: vi.fn(),
+  loadOpenRouterFreeModels: vi.fn(),
+  isAbortLikeError: vi.fn(),
+  OPENROUTER_FREE_ROUTER_MODEL: "openrouter/free"
 }));
 
 const pickFileLabel = /选择 JSONL 文件|Select JSONL file/i;
@@ -40,6 +47,13 @@ describe("App", () => {
     localStorage.clear();
     localStorage.setItem(LOCALE_STORAGE_KEY, "zh");
     vi.mocked(summarizeJsonLineTags).mockReset();
+    vi.mocked(loadOpenRouterFreeModels).mockReset();
+    vi.mocked(isAbortLikeError).mockReset();
+    vi.mocked(isAbortLikeError).mockReturnValue(false);
+    vi.mocked(loadOpenRouterFreeModels).mockResolvedValue([
+      { id: "openrouter/free", name: "OpenRouter Free Router" },
+      { id: "google/gemini-2.0-flash-exp:free", name: "Gemini Flash Free" }
+    ]);
   });
 
   it("上传后可展示统计、展开行、按错误过滤", async () => {
@@ -372,5 +386,37 @@ describe("App", () => {
     });
 
     expect(summarizeJsonLineTags).toHaveBeenCalledTimes(1);
+  });
+
+  it("默认模型使用 openrouter/free，并只加载免费模型选项", async () => {
+    render(<App />);
+
+    const modelSelect = screen.getByLabelText(/模型|Model/i) as HTMLSelectElement;
+
+    await waitFor(() => {
+      expect(loadOpenRouterFreeModels).toHaveBeenCalledTimes(1);
+    });
+
+    expect(modelSelect.value).toBe("google/gemini-2.0-flash-exp:free");
+    expect(screen.getByRole("option", { name: "OpenRouter Free Router" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Gemini Flash Free" })).toBeInTheDocument();
+    expect(screen.getByText(/已自动筛选 OpenRouter 免费模型|Only OpenRouter free models are shown/i)).toBeInTheDocument();
+  });
+
+  it("免费模型列表请求被中止时，不显示错误提示", async () => {
+    vi.mocked(loadOpenRouterFreeModels).mockRejectedValueOnce(
+      new Error("Request aborted by client: AbortError: signal is aborted without reason")
+    );
+    vi.mocked(isAbortLikeError).mockImplementation((error) => {
+      return error instanceof Error && error.message.includes("Request aborted by client");
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(loadOpenRouterFreeModels).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText(/免费模型列表加载失败|Failed to load free models/i)).not.toBeInTheDocument();
   });
 });

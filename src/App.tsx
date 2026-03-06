@@ -10,12 +10,19 @@ import {
   type Locale,
   type TranslateFn
 } from "./lib/i18n";
-import { summarizeJsonLineTags, type LineTagMap } from "./lib/openrouter";
+import {
+  isAbortLikeError,
+  loadOpenRouterFreeModels,
+  OPENROUTER_FREE_ROUTER_MODEL,
+  summarizeJsonLineTags,
+  type FreeModelOption,
+  type LineTagMap
+} from "./lib/openrouter";
 
 const PAGE_SIZE = 200;
 const OPENROUTER_API_KEY_STORAGE_KEY = "jsonl_viewer_openrouter_api_key";
 const OPENROUTER_MODEL_STORAGE_KEY = "jsonl_viewer_openrouter_model";
-const DEFAULT_OPENROUTER_MODEL = "openai/gpt-5-nano";
+const DEFAULT_OPENROUTER_MODEL = "";
 
 type FilterType = "all" | "ok" | "error";
 type PageViewStage = 0 | 1 | 2;
@@ -35,6 +42,11 @@ export default function App() {
   const [pageTreeControlMode, setPageTreeControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
   const [openRouterApiKey, setOpenRouterApiKey] = useState(() => localStorage.getItem(OPENROUTER_API_KEY_STORAGE_KEY) ?? "");
   const [openRouterModel, setOpenRouterModel] = useState(() => localStorage.getItem(OPENROUTER_MODEL_STORAGE_KEY) ?? DEFAULT_OPENROUTER_MODEL);
+  const [freeModelOptions, setFreeModelOptions] = useState<FreeModelOption[]>([
+    { id: OPENROUTER_FREE_ROUTER_MODEL, name: "OpenRouter Free Router" }
+  ]);
+  const [isLoadingFreeModels, setIsLoadingFreeModels] = useState(false);
+  const [freeModelsErrorMessage, setFreeModelsErrorMessage] = useState("");
   const [lineTags, setLineTags] = useState<LineTagMap>({});
   const [isTagging, setIsTagging] = useState(false);
   const [taggingErrorMessage, setTaggingErrorMessage] = useState("");
@@ -54,6 +66,45 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(OPENROUTER_MODEL_STORAGE_KEY, openRouterModel);
   }, [openRouterModel]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    setIsLoadingFreeModels(true);
+    setFreeModelsErrorMessage("");
+
+    void loadOpenRouterFreeModels({
+      apiKey: openRouterApiKey.trim() || undefined,
+      signal: abortController.signal
+    })
+      .then((models) => {
+        setFreeModelOptions(models);
+        setOpenRouterModel((currentModel) => {
+          const hasCurrentModel = models.some((model) => model.id === currentModel);
+          if (hasCurrentModel && currentModel !== OPENROUTER_FREE_ROUTER_MODEL) {
+            return currentModel;
+          }
+
+          const preferredModel = models.find((model) => model.id.endsWith(":free"));
+          return preferredModel?.id ?? models[0]?.id ?? DEFAULT_OPENROUTER_MODEL;
+        });
+      })
+      .catch((error: unknown) => {
+        if (isAbortLikeError(error)) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        setFreeModelsErrorMessage(message);
+      })
+      .finally(() => {
+        if (!abortController.signal.aborted) {
+          setIsLoadingFreeModels(false);
+        }
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [openRouterApiKey]);
 
   useEffect(() => {
     if (taggingRequestVersion === 0 || taggingRequestVersion === lastCompletedTaggingVersionRef.current) {
@@ -77,9 +128,9 @@ export default function App() {
       .then((nextLineTags) => {
         setLineTags(nextLineTags);
         lastCompletedTaggingVersionRef.current = taggingRequestVersion;
-      })
+    })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (isAbortLikeError(error)) {
           return;
         }
         const message = error instanceof Error ? error.message : String(error);
@@ -297,13 +348,17 @@ export default function App() {
           </label>
           <label className="field">
             <span>{t("aiModelLabel")}</span>
-            <input
-              type="text"
+            <select
               className="text-input"
-              placeholder={t("aiModelPlaceholder")}
               value={openRouterModel}
               onChange={(event) => setOpenRouterModel(event.target.value)}
-            />
+            >
+              {freeModelOptions.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name}
+                </option>
+              ))}
+            </select>
           </label>
           <button
             type="button"
@@ -313,6 +368,15 @@ export default function App() {
           >
             {isTagging ? t("aiGenerating") : t("aiGenerate")}
           </button>
+        </div>
+        <div className="ai-panel-meta">
+          <span>{isLoadingFreeModels ? t("aiModelsLoading") : t("aiModelsReady", { count: freeModelOptions.length })}</span>
+          {freeModelsErrorMessage && (
+            <span className="ai-panel-error-text">{t("aiModelsErrorPrefix", { message: freeModelsErrorMessage })}</span>
+          )}
+          {!freeModelsErrorMessage && !isLoadingFreeModels && (
+            <span>{t("aiFreeOnlyHint")}</span>
+          )}
         </div>
         {taggingErrorMessage && <div className="error-banner">{t("aiErrorPrefix", { message: taggingErrorMessage })}</div>}
         {!taggingErrorMessage && taggedLineCount > 0 && (
