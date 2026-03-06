@@ -140,6 +140,7 @@ body.modal-open {
   margin-top: 0.6rem;
   display: flex;
   justify-content: flex-start;
+  gap: 0.5rem;
 }
 
 .example-btn {
