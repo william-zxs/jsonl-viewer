@@ -7,6 +7,7 @@ import type { TranslateFn } from "../lib/i18n";
 type LineItemProps = {
   t: TranslateFn;
   line: ParsedLine;
+  aiTag?: string;
   expanded: boolean;
   onToggle: (lineNumber: number) => void;
   pageControlVersion?: number;
@@ -34,6 +35,7 @@ function summarize(t: TranslateFn, raw: string, parsed: unknown | null, error: s
 export default function LineItem({
   t,
   line,
+  aiTag,
   expanded,
   onToggle,
   pageControlVersion = 0,
@@ -140,6 +142,7 @@ export default function LineItem({
         >
           <span className="line-title">{t("lineTitle", { lineNumber: line.lineNumber })}</span>
           <span className={`line-status ${status === "OK" ? "status-ok" : "status-error"}`}>{status}</span>
+          {aiTag && <span className="line-ai-tag">{aiTag}</span>}
           <span className="line-summary">{summary}</span>
         </button>
         {!line.error && (

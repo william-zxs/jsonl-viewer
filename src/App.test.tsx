@@ -2,6 +2,11 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { LOCALE_STORAGE_KEY } from "./lib/i18n";
+import { summarizeJsonLineTags } from "./lib/openrouter";
+
+vi.mock("./lib/openrouter", () => ({
+  summarizeJsonLineTags: vi.fn()
+}));
 
 const pickFileLabel = /选择 JSONL 文件|Select JSONL file/i;
 const line1Label = /第 1 行|Line 1/i;
@@ -19,6 +24,8 @@ const tryExampleLabel = /试用示例|Try Example/i;
 const clearLabel = /清除|Clear/i;
 const emptyLabel = /暂无数据|No data/i;
 const errorPrefix = /错误:|Error:/i;
+const generateTagsLabel = /生成标签|Generate Tags/i;
+const apiKeyLabel = /OpenRouter API Key/i;
 
 function makeJsonlFile(text: string): File {
   const file = new File([text], "sample.jsonl", { type: "text/plain" });
@@ -32,6 +39,7 @@ describe("App", () => {
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem(LOCALE_STORAGE_KEY, "zh");
+    vi.mocked(summarizeJsonLineTags).mockReset();
   });
 
   it("上传后可展示统计、展开行、按错误过滤", async () => {
@@ -317,5 +325,52 @@ describe("App", () => {
 
     const expectedCount = Array.from(rawLine).length;
     expect(screen.getByText(new RegExp(`字符\\s*${expectedCount}|${expectedCount}\\s*字符`))).toBeInTheDocument();
+  });
+
+  it("点击生成标签后，会把 AI 标签显示到对应行上", async () => {
+    vi.mocked(summarizeJsonLineTags).mockResolvedValue({
+      1: "登录事件",
+      2: "工具调用"
+    });
+
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(apiKeyLabel), {
+      target: { value: "sk-or-v1-test" }
+    });
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const file = makeJsonlFile(`{"event":"login"}\n{"type":"tool_call"}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: generateTagsLabel }));
+
+    await waitFor(() => {
+      expect(screen.getByText("登录事件")).toBeInTheDocument();
+      expect(screen.getByText("工具调用")).toBeInTheDocument();
+    });
+  });
+
+  it("已保存 API Key 时，加载文件会自动生成标签", async () => {
+    localStorage.setItem("jsonl_viewer_openrouter_api_key", "sk-or-v1-test");
+    vi.mocked(summarizeJsonLineTags).mockResolvedValue({
+      1: "会话消息"
+    });
+
+    render(<App />);
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const file = makeJsonlFile(`{"message":"hello"}\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText("会话消息")).toBeInTheDocument();
+    });
+
+    expect(summarizeJsonLineTags).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,10 +1,12 @@
 import LineItem from "./LineItem";
 import type { ParsedLine } from "../lib/jsonl";
 import type { TranslateFn } from "../lib/i18n";
+import type { LineTagMap } from "../lib/openrouter";
 
 type LineListProps = {
   t: TranslateFn;
   lines: ParsedLine[];
+  lineTags: LineTagMap;
   pageSize: number;
   currentPage: number;
   expandedLineSet: Set<number>;
@@ -19,6 +21,7 @@ type LineListProps = {
 export default function LineList({
   t,
   lines,
+  lineTags,
   pageSize,
   currentPage,
   expandedLineSet,
@@ -66,6 +69,7 @@ export default function LineList({
           key={line.lineNumber}
           t={t}
           line={line}
+          aiTag={lineTags[line.lineNumber]}
           expanded={expandedLineSet.has(line.lineNumber)}
           onToggle={onToggleLine}
           pageControlVersion={pageTreeControlVersion}

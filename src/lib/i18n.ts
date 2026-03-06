@@ -28,6 +28,18 @@ export type MessageKey =
   | "tryExample"
   | "clearAll"
   | "showingCount"
+  | "aiPanelTitle"
+  | "aiPanelHint"
+  | "aiKeyLabel"
+  | "aiKeyPlaceholder"
+  | "aiModelLabel"
+  | "aiModelPlaceholder"
+  | "aiGenerate"
+  | "aiGenerating"
+  | "aiReadyAuto"
+  | "aiStatusIdle"
+  | "aiStatusDone"
+  | "aiErrorPrefix"
   | "pageViewToLevel1"
   | "pageViewToAll"
   | "pageViewToCollapse"
@@ -84,6 +96,18 @@ const messages: Record<Locale, Messages> = {
     tryExample: "试用示例",
     clearAll: "清除",
     showingCount: "当前显示 {pageCount} / {total}",
+    aiPanelTitle: "AI 行标签",
+    aiPanelHint: "OpenRouter Key 仅保存在当前浏览器；已保存后，新加载文件会自动生成每行标签。",
+    aiKeyLabel: "OpenRouter API Key",
+    aiKeyPlaceholder: "输入 sk-or-v1-...",
+    aiModelLabel: "模型",
+    aiModelPlaceholder: "例如 openai/gpt-5-nano",
+    aiGenerate: "生成标签",
+    aiGenerating: "正在生成标签...",
+    aiReadyAuto: "已启用自动标签",
+    aiStatusIdle: "尚未生成标签",
+    aiStatusDone: "已生成 {count} 行标签",
+    aiErrorPrefix: "AI 标签生成失败: {message}",
     pageViewToLevel1: "当前页首层展开",
     pageViewToAll: "当前页全部展开",
     pageViewToCollapse: "当前页全部折叠",
@@ -133,6 +157,18 @@ const messages: Record<Locale, Messages> = {
     tryExample: "Try Example",
     clearAll: "Clear",
     showingCount: "Showing {pageCount} / {total}",
+    aiPanelTitle: "AI Line Tags",
+    aiPanelHint: "The OpenRouter key is stored only in this browser. Once saved, newly loaded files are tagged automatically.",
+    aiKeyLabel: "OpenRouter API Key",
+    aiKeyPlaceholder: "Enter sk-or-v1-...",
+    aiModelLabel: "Model",
+    aiModelPlaceholder: "For example openai/gpt-5-nano",
+    aiGenerate: "Generate Tags",
+    aiGenerating: "Generating tags...",
+    aiReadyAuto: "Auto-tagging enabled",
+    aiStatusIdle: "No tags generated yet",
+    aiStatusDone: "{count} line tags generated",
+    aiErrorPrefix: "AI tag generation failed: {message}",
     pageViewToLevel1: "Expand first level",
     pageViewToAll: "Expand all levels",
     pageViewToCollapse: "Collapse all",

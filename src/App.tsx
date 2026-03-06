@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DropZone from "./components/DropZone";
 import LineList from "./components/LineList";
 import { parseJsonl, type ParsedLine } from "./lib/jsonl";
@@ -10,8 +10,12 @@ import {
   type Locale,
   type TranslateFn
 } from "./lib/i18n";
+import { summarizeJsonLineTags, type LineTagMap } from "./lib/openrouter";
 
 const PAGE_SIZE = 200;
+const OPENROUTER_API_KEY_STORAGE_KEY = "jsonl_viewer_openrouter_api_key";
+const OPENROUTER_MODEL_STORAGE_KEY = "jsonl_viewer_openrouter_model";
+const DEFAULT_OPENROUTER_MODEL = "openai/gpt-5-nano";
 
 type FilterType = "all" | "ok" | "error";
 type PageViewStage = 0 | 1 | 2;
@@ -29,12 +33,68 @@ export default function App() {
   const [currentPageViewStage, setCurrentPageViewStage] = useState<PageViewStage>(0);
   const [pageTreeControlVersion, setPageTreeControlVersion] = useState(0);
   const [pageTreeControlMode, setPageTreeControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
+  const [openRouterApiKey, setOpenRouterApiKey] = useState(() => localStorage.getItem(OPENROUTER_API_KEY_STORAGE_KEY) ?? "");
+  const [openRouterModel, setOpenRouterModel] = useState(() => localStorage.getItem(OPENROUTER_MODEL_STORAGE_KEY) ?? DEFAULT_OPENROUTER_MODEL);
+  const [lineTags, setLineTags] = useState<LineTagMap>({});
+  const [isTagging, setIsTagging] = useState(false);
+  const [taggingErrorMessage, setTaggingErrorMessage] = useState("");
+  const [taggingRequestVersion, setTaggingRequestVersion] = useState(0);
+  const lastCompletedTaggingVersionRef = useRef(0);
   const t: TranslateFn = (key, params) => translateMessage(locale, key, params);
 
   useEffect(() => {
     localStorage.setItem(LOCALE_STORAGE_KEY, locale);
     document.documentElement.lang = locale;
   }, [locale]);
+
+  useEffect(() => {
+    localStorage.setItem(OPENROUTER_API_KEY_STORAGE_KEY, openRouterApiKey);
+  }, [openRouterApiKey]);
+
+  useEffect(() => {
+    localStorage.setItem(OPENROUTER_MODEL_STORAGE_KEY, openRouterModel);
+  }, [openRouterModel]);
+
+  useEffect(() => {
+    if (taggingRequestVersion === 0 || taggingRequestVersion === lastCompletedTaggingVersionRef.current) {
+      return;
+    }
+    if (!openRouterApiKey.trim() || lines.length === 0) {
+      return;
+    }
+
+    const abortController = new AbortController();
+    setIsTagging(true);
+    setTaggingErrorMessage("");
+
+    void summarizeJsonLineTags({
+      apiKey: openRouterApiKey.trim(),
+      model: openRouterModel.trim() || DEFAULT_OPENROUTER_MODEL,
+      locale,
+      lines,
+      signal: abortController.signal
+    })
+      .then((nextLineTags) => {
+        setLineTags(nextLineTags);
+        lastCompletedTaggingVersionRef.current = taggingRequestVersion;
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        setTaggingErrorMessage(message);
+      })
+      .finally(() => {
+        if (!abortController.signal.aborted) {
+          setIsTagging(false);
+        }
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [lines, locale, openRouterApiKey, openRouterModel, taggingRequestVersion]);
 
   const stats = useMemo(() => {
     const total = lines.length;
@@ -83,12 +143,19 @@ export default function App() {
     setCurrentPageViewStage(0);
     setPageTreeControlMode(null);
     setPageTreeControlVersion(0);
+    setLineTags({});
+    setTaggingErrorMessage("");
+    setIsTagging(false);
+    lastCompletedTaggingVersionRef.current = 0;
   };
 
   const loadJsonlText = (name: string, text: string) => {
     resetViewer();
     setFileName(name);
     setLines(parseJsonl(text));
+    if (openRouterApiKey.trim()) {
+      setTaggingRequestVersion((version) => version + 1);
+    }
   };
 
   const handleFile = async (file: File) => {
@@ -160,6 +227,15 @@ export default function App() {
     loadJsonlText("example_agent_session.jsonl", exampleAgentSession);
   };
 
+  const handleGenerateLineTags = () => {
+    setTaggingErrorMessage("");
+    setLineTags({});
+    lastCompletedTaggingVersionRef.current = 0;
+    setTaggingRequestVersion((version) => version + 1);
+  };
+
+  const taggedLineCount = Object.keys(lineTags).length;
+
   return (
     <div className="app-shell">
       <header className="top-panel">
@@ -197,6 +273,52 @@ export default function App() {
           {t("clearAll")}
         </button>
       </div>
+
+      <section className="ai-panel">
+        <div className="ai-panel-head">
+          <div>
+            <strong>{t("aiPanelTitle")}</strong>
+            <p>{t("aiPanelHint")}</p>
+          </div>
+          <span className={`ai-panel-status ${openRouterApiKey.trim() ? "is-ready" : ""}`}>
+            {openRouterApiKey.trim() ? t("aiReadyAuto") : t("aiStatusIdle")}
+          </span>
+        </div>
+        <div className="ai-panel-grid">
+          <label className="field">
+            <span>{t("aiKeyLabel")}</span>
+            <input
+              type="password"
+              className="text-input"
+              placeholder={t("aiKeyPlaceholder")}
+              value={openRouterApiKey}
+              onChange={(event) => setOpenRouterApiKey(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>{t("aiModelLabel")}</span>
+            <input
+              type="text"
+              className="text-input"
+              placeholder={t("aiModelPlaceholder")}
+              value={openRouterModel}
+              onChange={(event) => setOpenRouterModel(event.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="ghost-btn ai-generate-btn"
+            onClick={handleGenerateLineTags}
+            disabled={isParsing || isTagging || lines.length === 0 || !openRouterApiKey.trim()}
+          >
+            {isTagging ? t("aiGenerating") : t("aiGenerate")}
+          </button>
+        </div>
+        {taggingErrorMessage && <div className="error-banner">{t("aiErrorPrefix", { message: taggingErrorMessage })}</div>}
+        {!taggingErrorMessage && taggedLineCount > 0 && (
+          <div className="loading-tip ai-done-tip">{t("aiStatusDone", { count: taggedLineCount })}</div>
+        )}
+      </section>
 
       <section className="stats-grid">
         <div className="stat-card">
@@ -271,6 +393,7 @@ export default function App() {
       <LineList
         t={t}
         lines={filteredLines}
+        lineTags={lineTags}
         pageSize={PAGE_SIZE}
         currentPage={safePage}
         expandedLineSet={expandedLineSet}
