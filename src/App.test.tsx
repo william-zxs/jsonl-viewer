@@ -16,6 +16,7 @@ const treeCopyLabel = /复制|Copy/i;
 const treeCopiedLabel = /已复制|Copied/i;
 const searchLabel = /全文检索|Search full text/i;
 const tryExampleLabel = /试用示例|Try Example/i;
+const clearLabel = /清除|Clear/i;
 const emptyLabel = /暂无数据|No data/i;
 const errorPrefix = /错误:|Error:/i;
 
@@ -237,6 +238,36 @@ describe("App", () => {
 
     expect(screen.getByText("example_agent_session.jsonl")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: line1Label })).toBeInTheDocument();
+  });
+
+  it("支持一键清除当前文件和筛选状态", async () => {
+    render(<App />);
+
+    const input = screen.getByLabelText(pickFileLabel);
+    const file = makeJsonlFile(`{"event":"login"}\nnot-json\n`);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stat-total")).toHaveTextContent("2");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "ERROR" }));
+    fireEvent.change(screen.getByRole("searchbox", { name: searchLabel }), {
+      target: { value: "json" }
+    });
+
+    expect(screen.getByText(line2Label)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: clearLabel }));
+
+    expect(screen.getByTestId("stat-total")).toHaveTextContent("0");
+    expect(screen.getByTestId("stat-success")).toHaveTextContent("0");
+    expect(screen.getByTestId("stat-failed")).toHaveTextContent("0");
+    expect(screen.getByText(/未选择|Not selected/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All" })).toHaveClass("active");
+    expect(screen.getByRole("searchbox", { name: searchLabel })).toHaveValue("");
+    expect(screen.getByText(emptyLabel)).toBeInTheDocument();
+    expect(screen.queryByText(line2Label)).not.toBeInTheDocument();
   });
 
   it("支持在 JSON 树块头复制当前节点 JSON，并显示已复制反馈", async () => {

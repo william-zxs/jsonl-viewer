@@ -72,14 +72,22 @@ export default function App() {
   const totalPages = Math.max(1, Math.ceil(filteredLineNumbers.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
 
-  const loadJsonlText = (name: string, text: string) => {
+  const resetViewer = () => {
+    setFileName("");
+    setLines([]);
     setErrorMessage("");
-    setFileName(name);
+    setFilter("all");
+    setKeyword("");
     setCurrentPage(1);
     setExpandedLineSet(new Set());
     setCurrentPageViewStage(0);
     setPageTreeControlMode(null);
     setPageTreeControlVersion(0);
+  };
+
+  const loadJsonlText = (name: string, text: string) => {
+    resetViewer();
+    setFileName(name);
     setLines(parseJsonl(text));
   };
 
@@ -89,8 +97,8 @@ export default function App() {
       const text = await file.text();
       loadJsonlText(file.name, text);
     } catch (error) {
+      resetViewer();
       const message = error instanceof Error ? error.message : t("readFileFailedUnknown");
-      setLines([]);
       setErrorMessage(message);
     } finally {
       setIsParsing(false);
@@ -184,6 +192,9 @@ export default function App() {
       <div className="example-row">
         <button type="button" className="ghost-btn example-btn" onClick={handleTryExample} disabled={isParsing}>
           {t("tryExample")}
+        </button>
+        <button type="button" className="ghost-btn example-btn" onClick={resetViewer} disabled={isParsing}>
+          {t("clearAll")}
         </button>
       </div>
 

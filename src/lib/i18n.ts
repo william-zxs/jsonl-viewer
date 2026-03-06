@@ -26,6 +26,7 @@ export type MessageKey =
   | "dropMain"
   | "dropSub"
   | "tryExample"
+  | "clearAll"
   | "showingCount"
   | "pageViewToLevel1"
   | "pageViewToAll"
@@ -81,6 +82,7 @@ const messages: Record<Locale, Messages> = {
     dropMain: "拖拽 JSONL 文件到这里",
     dropSub: "或点击选择文件",
     tryExample: "试用示例",
+    clearAll: "清除",
     showingCount: "当前显示 {pageCount} / {total}",
     pageViewToLevel1: "当前页首层展开",
     pageViewToAll: "当前页全部展开",
@@ -129,6 +131,7 @@ const messages: Record<Locale, Messages> = {
     dropMain: "Drop your JSONL file here",
     dropSub: "or click to choose a file",
     tryExample: "Try Example",
+    clearAll: "Clear",
     showingCount: "Showing {pageCount} / {total}",
     pageViewToLevel1: "Expand first level",
     pageViewToAll: "Expand all levels",
