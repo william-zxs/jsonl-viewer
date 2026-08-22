@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import type { MouseEvent as ReactMouseEvent } from "react";
 import type { TranslateFn } from "../lib/i18n";
 
 type JsonTreeProps = {
@@ -11,7 +10,6 @@ type JsonTreeProps = {
   defaultExpandedDepth?: number;
   controlVersion?: number;
   controlMode?: "expand" | "collapse" | "reset" | null;
-  onLeafDoubleClick?: () => void;
 };
 
 function fallbackCopyText(text: string): boolean {
@@ -85,8 +83,7 @@ export default function JsonTree({
   depth = 0,
   defaultExpandedDepth = 1,
   controlVersion = 0,
-  controlMode = null,
-  onLeafDoubleClick
+  controlMode = null
 }: JsonTreeProps) {
   const safeDepth = Math.min(depth, 5);
   const lineDepthClass = `line-depth-${safeDepth}`;
@@ -110,7 +107,6 @@ export default function JsonTree({
   const prevControlVersion = useRef(controlVersion);
   const toggleButtonRef = useRef<HTMLButtonElement | null>(null);
   const copyResetTimerRef = useRef<number | null>(null);
-  const focusOnCloseRef = useRef(false);
 
   useEffect(() => {
     if (controlVersion !== prevControlVersion.current) {
@@ -124,13 +120,6 @@ export default function JsonTree({
       prevControlVersion.current = controlVersion;
     }
   }, [controlMode, controlVersion, defaultExpandedDepth, depth]);
-
-  useEffect(() => {
-    if (!isOpen && focusOnCloseRef.current) {
-      toggleButtonRef.current?.focus();
-      focusOnCloseRef.current = false;
-    }
-  }, [isOpen]);
 
   useEffect(
     () => () => {
@@ -151,29 +140,11 @@ export default function JsonTree({
     return Object.entries(data as Record<string, unknown>);
   }, [data, isObject]);
 
-  const handleLineMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (event.detail > 1) {
-      event.preventDefault();
-    }
-  };
-
   if (!isObject) {
-    const handleLeafDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      onLeafDoubleClick?.();
-    };
-    return (
-      <div
-        className={`tree-line ${lineDepthClass}`}
-        style={lineStyle}
-        data-depth={depth}
-        onMouseDown={handleLineMouseDown}
-        onDoubleClick={handleLeafDoubleClick}
-      >
-        {name !== undefined && <span className="tree-key">{name}: </span>}
-        <span className={typeClass(data)}>{formatPrimitive(data)}</span>
-      </div>
-    );
+    return <div className={`tree-line ${lineDepthClass}`} style={lineStyle} data-depth={depth}>
+      {name !== undefined && <span className="tree-key">{name}: </span>}
+      <span className={typeClass(data)}>{formatPrimitive(data)}</span>
+    </div>;
   }
 
   const isArray = Array.isArray(data);
@@ -182,18 +153,6 @@ export default function JsonTree({
   const closeSymbol = isArray ? "]" : "}";
   const preview = isArray ? `[${entries.length}]` : `{${entries.length}}`;
   const toggleOpen = () => setIsOpen((prev) => !prev);
-  const closeCurrentBlockAndFocus = () => {
-    focusOnCloseRef.current = true;
-    setIsOpen(false);
-  };
-  const handleHeadDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    toggleOpen();
-  };
-  const handleTailDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    closeCurrentBlockAndFocus();
-  };
   const handleCopyClick = async (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -217,13 +176,7 @@ export default function JsonTree({
       data-depth={depth}
       style={blockStyle}
     >
-      <div
-        className={`tree-line ${lineDepthClass} tree-block-head`}
-        style={lineStyle}
-        data-depth={depth}
-        onMouseDown={handleLineMouseDown}
-        onDoubleClick={handleHeadDoubleClick}
-      >
+      <div className={`tree-line ${lineDepthClass} tree-block-head`} style={lineStyle} data-depth={depth}>
         <button
           ref={toggleButtonRef}
           type="button"
@@ -263,20 +216,13 @@ export default function JsonTree({
               defaultExpandedDepth={defaultExpandedDepth}
               controlVersion={controlVersion}
               controlMode={controlMode}
-              onLeafDoubleClick={closeCurrentBlockAndFocus}
             />
           ))}
         </div>
       )}
 
       {isOpen && (
-        <div
-          className={`tree-line ${lineDepthClass} tree-block-tail`}
-          style={lineStyle}
-          data-depth={depth}
-          onMouseDown={handleLineMouseDown}
-          onDoubleClick={handleTailDoubleClick}
-        >
+        <div className={`tree-line ${lineDepthClass} tree-block-tail`} style={lineStyle} data-depth={depth}>
           <span className="tree-bracket">{closeSymbol}</span>
           {name !== undefined && <span className="tree-end-hint">end: {name}</span>}
         </div>
