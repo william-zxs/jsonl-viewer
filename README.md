@@ -1,33 +1,21 @@
 # JSONL Viewer
 
-[中文文档 (Chinese)](./README.zh-CN.md)
+[中文](./README.zh-CN.md)
 
-A browser-based JSONL viewer built with React + Vite, designed to help analyze agent-generated JSONL logs.
+A self-hosted JSONL browser. Start it with a read-only directory, then inspect its JSONL files from a browser.
 
-## Preview
-
-![JSON tree node hover highlight](./docs/images/json-tree-node-hover-highlight.png)
-
-## Features
-
-- Drag and drop a `jsonl` file (or click to choose one)
-- Parse and render entries line by line with `OK` / `ERROR` status
-- Expand a line to inspect JSON as a collapsible tree
-- Expand/collapse all lines on the current page
-- Expand/collapse all JSON tree nodes within a single line
-- Summary stats for total / success / failed lines
-- Quick filters: `All / OK / ERROR`
-- Pagination (200 lines per page)
-
-## Run Locally
+## Run
 
 ```bash
 npm install
-npm run dev
+npm run build
+npm run serve -- /path/to/jsonl-directory
 ```
 
-## Test
+For LAN access, bind explicitly and protect the data API with a token:
 
 ```bash
-npm test
+npm run serve -- /path/to/jsonl-directory --host 0.0.0.0 --port 8400 --token a-long-random-token
 ```
+
+See the [CLI service plan](./docs/cli-service-plan.zh-CN.md) for the implemented scope and roadmap.

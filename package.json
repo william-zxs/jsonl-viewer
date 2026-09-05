@@ -3,10 +3,24 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "bin": {
+    "jsonl-viewer": "server/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "server",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "serve": "node server/cli.mjs",
+    "prepack": "npm run build",
     "test": "vitest run"
   },
   "dependencies": {

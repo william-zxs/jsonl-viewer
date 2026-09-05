@@ -1,289 +1,160 @@
-import { useEffect, useMemo, useState } from "react";
-import DropZone from "./components/DropZone";
-import LineList from "./components/LineList";
-import { parseJsonl, type ParsedLine } from "./lib/jsonl";
-import exampleAgentSession from "../examples/example_agent_session.jsonl?raw";
-import {
-  LOCALE_STORAGE_KEY,
-  resolveInitialLocale,
-  t as translateMessage,
-  type Locale,
-  type TranslateFn
-} from "./lib/i18n";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import ColumnPicker from "./components/ColumnPicker";
+import FileTree from "./components/FileTree";
+import JsonTable from "./components/JsonTable";
+import JsonTree from "./components/JsonTree";
+import ViewerToolbar from "./components/ViewerToolbar";
+import { t } from "./lib/i18n";
+import { fetchFile, fetchTree, type FileNode, type FilePayload, type QueryFilters, type ViewerRow } from "./lib/viewer-api";
 
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 100;
+const EMPTY_FILTERS: QueryFilters = { page: 1, pageSize: PAGE_SIZE, search: "", status: "all", field: "", operator: "contains", value: "" };
 
-type FilterType = "all" | "ok" | "error";
-type PageViewStage = 0 | 1 | 2;
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function CloseIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>;
+}
 
 export default function App() {
-  const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale());
-  const [fileName, setFileName] = useState("");
-  const [lines, setLines] = useState<ParsedLine[]>([]);
-  const [isParsing, setIsParsing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [filter, setFilter] = useState<FilterType>("all");
-  const [keyword, setKeyword] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [expandedLineSet, setExpandedLineSet] = useState<Set<number>>(new Set());
-  const [currentPageViewStage, setCurrentPageViewStage] = useState<PageViewStage>(0);
-  const [pageTreeControlVersion, setPageTreeControlVersion] = useState(0);
-  const [pageTreeControlMode, setPageTreeControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
-  const t: TranslateFn = (key, params) => translateMessage(locale, key, params);
+  const [rootName, setRootName] = useState("");
+  const [rootNodes, setRootNodes] = useState<FileNode[]>([]);
+  const [childNodes, setChildNodes] = useState<Record<string, FileNode[]>>({});
+  const [loadingPaths, setLoadingPaths] = useState<Set<string>>(new Set());
+  const [selectedPath, setSelectedPath] = useState("");
+  const [draftFilters, setDraftFilters] = useState<QueryFilters>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<QueryFilters>(EMPTY_FILTERS);
+  const [payload, setPayload] = useState<FilePayload | null>(null);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [showColumns, setShowColumns] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<ViewerRow | null>(null);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadRoot = useCallback(async () => {
+    try {
+      const tree = await fetchTree();
+      setRootName(tree.rootName);
+      setRootNodes(tree.nodes);
+      setError("");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "无法连接到 JSONL 服务");
+    }
+  }, []);
+
+  useEffect(() => { void loadRoot(); }, [loadRoot]);
+
+  const toggleDirectory = useCallback(async (path: string) => {
+    if (childNodes[path]) {
+      setChildNodes((previous) => {
+        const next = { ...previous };
+        delete next[path];
+        return next;
+      });
+      return;
+    }
+    setLoadingPaths((previous) => new Set(previous).add(path));
+    try {
+      const tree = await fetchTree(path);
+      setChildNodes((previous) => ({ ...previous, [path]: tree.nodes }));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "无法读取目录");
+    } finally {
+      setLoadingPaths((previous) => {
+        const next = new Set(previous);
+        next.delete(path);
+        return next;
+      });
+    }
+  }, [childNodes]);
 
   useEffect(() => {
-    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
-    document.documentElement.lang = locale;
-  }, [locale]);
-
-  const stats = useMemo(() => {
-    const total = lines.length;
-    const failed = lines.filter((line) => line.error).length;
-    const success = total - failed;
-    return { total, success, failed };
-  }, [lines]);
-
-  const filteredLines = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
-    return lines
-      .filter((line) => {
-        if (filter === "ok") {
-          if (line.error) {
-            return false;
-          }
-        }
-        if (filter === "error") {
-          if (!line.error) {
-            return false;
-          }
-        }
-        if (!normalizedKeyword) {
-          return true;
-        }
-        return line.raw.toLowerCase().includes(normalizedKeyword);
+    if (!selectedPath) return;
+    const controller = new AbortController();
+    setIsLoadingFile(true);
+    setError("");
+    fetchFile(selectedPath, appliedFilters)
+      .then((nextPayload) => {
+        if (controller.signal.aborted) return;
+        setPayload(nextPayload);
+        setVisibleColumns((previous) => previous.length ? previous : nextPayload.columns.slice(0, 6));
+      })
+      .catch((requestError) => {
+        if (!controller.signal.aborted) setError(requestError instanceof Error ? requestError.message : "无法读取 JSONL 文件");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoadingFile(false);
       });
-  }, [filter, keyword, lines]);
+    return () => controller.abort();
+  }, [appliedFilters, selectedPath]);
 
-  const filteredLineNumbers = useMemo(
-    () => filteredLines.map((line) => line.lineNumber),
-    [filteredLines]
-  );
+  useEffect(() => {
+    document.body.classList.toggle("modal-open", Boolean(selectedRow));
+    return () => document.body.classList.remove("modal-open");
+  }, [selectedRow]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredLineNumbers.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && setSelectedRow(null);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
 
-  const resetViewer = () => {
-    setFileName("");
-    setLines([]);
-    setErrorMessage("");
-    setFilter("all");
-    setKeyword("");
-    setCurrentPage(1);
-    setExpandedLineSet(new Set());
-    setCurrentPageViewStage(0);
-    setPageTreeControlMode(null);
-    setPageTreeControlVersion(0);
+  const pageDescription = useMemo(() => {
+    if (!payload) return "";
+    const { page, pageSize, total } = payload.pagination;
+    const start = total ? (page - 1) * pageSize + 1 : 0;
+    const end = Math.min(page * pageSize, total);
+    return `${start}–${end} / ${total}`;
+  }, [payload]);
+
+  const openFile = (path: string) => {
+    setSelectedPath(path);
+    setPayload(null);
+    setSelectedRow(null);
+    setShowColumns(false);
+    setVisibleColumns([]);
+    setDraftFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
   };
 
-  const loadJsonlText = (name: string, text: string) => {
-    resetViewer();
-    setFileName(name);
-    setLines(parseJsonl(text));
+  const applyFilters = () => setAppliedFilters({ ...draftFilters, page: 1 });
+  const resetFilters = () => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); };
+  const changePage = (page: number) => {
+    const next = { ...appliedFilters, page };
+    setAppliedFilters(next);
+    setDraftFilters((previous) => ({ ...previous, page }));
   };
 
-  const handleFile = async (file: File) => {
-    setIsParsing(true);
-    try {
-      const text = await file.text();
-      loadJsonlText(file.name, text);
-    } catch (error) {
-      resetViewer();
-      const message = error instanceof Error ? error.message : t("readFileFailedUnknown");
-      setErrorMessage(message);
-    } finally {
-      setIsParsing(false);
-    }
-  };
-
-  const toggleLine = (lineNumber: number) => {
-    setExpandedLineSet((prev) => {
-      const next = new Set(prev);
-      if (next.has(lineNumber)) {
-        next.delete(lineNumber);
-      } else {
-        next.add(lineNumber);
-      }
-      return next;
-    });
-  };
-
-  const setCurrentPageExpanded = (expanded: boolean) => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    const pageLineNumbers = filteredLineNumbers.slice(start, start + PAGE_SIZE);
-    setExpandedLineSet((prev) => {
-      const next = new Set(prev);
-      pageLineNumbers.forEach((lineNumber) => {
-        if (expanded) {
-          next.add(lineNumber);
-        } else {
-          next.delete(lineNumber);
-        }
-      });
-      return next;
-    });
-  };
-
-  const triggerPageTreeControl = (mode: "expand" | "collapse" | "reset") => {
-    setPageTreeControlMode(mode);
-    setPageTreeControlVersion((version) => version + 1);
-  };
-
-  const cycleCurrentPageView = () => {
-    if (currentPageViewStage === 0) {
-      setCurrentPageExpanded(true);
-      triggerPageTreeControl("reset");
-      setCurrentPageViewStage(1);
-      return;
-    }
-    if (currentPageViewStage === 1) {
-      setCurrentPageExpanded(true);
-      triggerPageTreeControl("expand");
-      setCurrentPageViewStage(2);
-      return;
-    }
-    setCurrentPageExpanded(false);
-    triggerPageTreeControl("collapse");
-    setCurrentPageViewStage(0);
-  };
-
-  const handleTryExample = () => {
-    loadJsonlText("example_agent_session.jsonl", exampleAgentSession);
-  };
-
-  return (
-    <div className="app-shell">
-      <header className="top-panel">
-        <div className="top-panel-main">
-          <h1>{t("appTitle")}</h1>
-          <p>{t("appSubtitle")}</p>
+  return <div className="viewer-shell">
+    <main className="viewer-main">
+      <header className="app-header">
+        <div className="brand"><span className="brand-mark">{`{}`}</span><span>JSONL Viewer</span></div>
+        <div className="file-context">
+          {payload ? <><span className="path-label">{rootName}</span><span className="path-separator">/</span><strong>{payload.file.path}</strong><span className="file-meta">{formatFileSize(payload.file.size)} · 更新于 {new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(payload.file.updatedAt))}</span></> : <span>从右侧选择一个 JSONL 文件</span>}
         </div>
-        <div className="lang-switch" role="group" aria-label={t("languageSwitcherAria")}>
-          <button
-            type="button"
-            className={`lang-btn ${locale === "zh" ? "active" : ""}`}
-            onClick={() => setLocale("zh")}
-            aria-pressed={locale === "zh"}
-          >
-            {t("languageZh")}
-          </button>
-          <span className="lang-sep">/</span>
-          <button
-            type="button"
-            className={`lang-btn ${locale === "en" ? "active" : ""}`}
-            onClick={() => setLocale("en")}
-            aria-pressed={locale === "en"}
-          >
-            {t("languageEn")}
-          </button>
-        </div>
+        <button type="button" className="button refresh-button" onClick={() => { void loadRoot(); if (selectedPath) setAppliedFilters({ ...appliedFilters }); }} aria-label="刷新">↻ <span>刷新</span></button>
       </header>
 
-      <DropZone onFile={handleFile} disabled={isParsing} t={t} />
-      <div className="example-row">
-        <button type="button" className="ghost-btn example-btn" onClick={handleTryExample} disabled={isParsing}>
-          {t("tryExample")}
-        </button>
-        <button type="button" className="ghost-btn example-btn" onClick={resetViewer} disabled={isParsing}>
-          {t("clearAll")}
-        </button>
-      </div>
-
-      <section className="stats-grid">
-        <div className="stat-card">
-          <span>{t("statTotal")}</span>
-          <strong data-testid="stat-total">{stats.total}</strong>
-        </div>
-        <div className="stat-card">
-          <span>{t("statSuccess")}</span>
-          <strong data-testid="stat-success">{stats.success}</strong>
-        </div>
-        <div className="stat-card">
-          <span>{t("statFailed")}</span>
-          <strong data-testid="stat-failed">{stats.failed}</strong>
-        </div>
-        <div className="stat-card">
-          <span>{t("statFile")}</span>
-          <strong className="truncate">{fileName || t("fileNotSelected")}</strong>
-        </div>
-      </section>
-
-      <section className="filter-row">
-        <button
-          type="button"
-          className={`chip ${filter === "all" ? "active" : ""}`}
-          onClick={() => {
-            setFilter("all");
-            setCurrentPage(1);
-            setCurrentPageViewStage(0);
-          }}
-        >
-          {t("filterAll")}
-        </button>
-        <button
-          type="button"
-          className={`chip ${filter === "ok" ? "active" : ""}`}
-          onClick={() => {
-            setFilter("ok");
-            setCurrentPage(1);
-            setCurrentPageViewStage(0);
-          }}
-        >
-          {t("filterOk")}
-        </button>
-        <button
-          type="button"
-          className={`chip ${filter === "error" ? "active" : ""}`}
-          onClick={() => {
-            setFilter("error");
-            setCurrentPage(1);
-            setCurrentPageViewStage(0);
-          }}
-        >
-          {t("filterError")}
-        </button>
-        <input
-          type="search"
-          className="search-input"
-          placeholder={t("searchPlaceholder")}
-          aria-label={t("searchAria")}
-          value={keyword}
-          onChange={(event) => {
-            setKeyword(event.target.value);
-            setCurrentPage(1);
-            setCurrentPageViewStage(0);
-          }}
-        />
-      </section>
-
-      {errorMessage && <div className="error-banner">{t("readFileFailedPrefix", { message: errorMessage })}</div>}
-      {isParsing && <div className="loading-tip">{t("loadingTip")}</div>}
-
-      <LineList
-        t={t}
-        lines={filteredLines}
-        pageSize={PAGE_SIZE}
-        currentPage={safePage}
-        expandedLineSet={expandedLineSet}
-        onToggleLine={toggleLine}
-        onPageChange={(page) => {
-          setCurrentPage(page);
-          setCurrentPageViewStage(0);
-        }}
-        currentPageViewStage={currentPageViewStage}
-        onCycleCurrentPageView={cycleCurrentPageView}
-        pageTreeControlVersion={pageTreeControlVersion}
-        pageTreeControlMode={pageTreeControlMode}
-      />
-    </div>
-  );
+      {selectedPath ? <>
+        <div className="toolbar-wrap"><ViewerToolbar draft={draftFilters} onChange={setDraftFilters} onApply={applyFilters} onReset={resetFilters} onOpenColumns={() => setShowColumns((previous) => !previous)} />{showColumns && payload && <ColumnPicker columns={payload.columns} visibleColumns={visibleColumns} onChange={setVisibleColumns} onClose={() => setShowColumns(false)} />}</div>
+        {error && <div className="notice notice-error">{error}</div>}
+        {isLoadingFile && <div className="loading-line">正在读取文件…</div>}
+        {payload && <>
+          <div className="data-summary"><span>{pageDescription} 条匹配记录</span><span>共 {payload.stats.total} 行 · 有效 {payload.stats.valid} · 错误 {payload.stats.failed}</span></div>
+          <JsonTable rows={payload.rows} columns={visibleColumns} onOpenRow={setSelectedRow} />
+          <nav className="pagination" aria-label="分页">
+            <button type="button" className="button" disabled={payload.pagination.page <= 1 || isLoadingFile} onClick={() => changePage(payload.pagination.page - 1)}>上一页</button>
+            <span>第 {payload.pagination.page} / {payload.pagination.totalPages} 页</span>
+            <button type="button" className="button" disabled={payload.pagination.page >= payload.pagination.totalPages || isLoadingFile} onClick={() => changePage(payload.pagination.page + 1)}>下一页</button>
+          </nav>
+        </>}
+      </> : <div className="welcome-state"><div className="welcome-symbol">{`{ }`}</div><h1>选择一个 JSONL 文件</h1><p>目录中的 JSONL 文件会显示在右侧。每一行对应一条 JSON 记录，可筛选字段并全屏查看详情。</p></div>}
+    </main>
+    <FileTree rootName={rootName} rootNodes={rootNodes} childNodes={childNodes} loadingPaths={loadingPaths} selectedPath={selectedPath} onToggleDirectory={toggleDirectory} onSelectFile={openFile} />
+    {selectedRow && <div className="json-dialog-backdrop" role="presentation" onMouseDown={() => setSelectedRow(null)}><section className="json-dialog" role="dialog" aria-modal="true" aria-label={`第 ${selectedRow.lineNumber} 行 JSON`} onMouseDown={(event) => event.stopPropagation()}><header><div><span className="dialog-kicker">第 {selectedRow.lineNumber} 行</span><h2>{selectedRow.error ? "无法解析此行 JSON" : "完整 JSON"}</h2></div><button type="button" className="dialog-close" onClick={() => setSelectedRow(null)} aria-label="关闭全屏"><CloseIcon /></button></header><div className="json-dialog-content">{selectedRow.error ? <><p className="dialog-error">{selectedRow.error}</p><pre>{selectedRow.raw}</pre></> : <JsonTree t={(key, params) => t("zh", key, params)} data={selectedRow.parsed} defaultExpandedDepth={2} />}</div></section></div>}
+  </div>;
 }
