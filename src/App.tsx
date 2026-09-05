@@ -37,6 +37,8 @@ export default function App() {
   const [showColumns, setShowColumns] = useState(false);
   const [selectedRow, setSelectedRow] = useState<ViewerRow | null>(null);
   const [structuralAid, setStructuralAid] = useState<"off" | "compact" | "full">("compact");
+  const [treeControlVersion, setTreeControlVersion] = useState(0);
+  const [treeControlMode, setTreeControlMode] = useState<"expand" | "collapse" | "reset" | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [error, setError] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(282);
@@ -157,6 +159,15 @@ export default function App() {
     setVisibleColumns((payload?.columnsByDepth[String(depth)] || []).slice(0, 6));
     setShowColumns(false);
   };
+  const openRow = (row: ViewerRow) => {
+    setTreeControlMode(null);
+    setTreeControlVersion(0);
+    setSelectedRow(row);
+  };
+  const expandAllTreeNodes = () => {
+    setTreeControlMode("expand");
+    setTreeControlVersion((version) => version + 1);
+  };
   const shellStyle = { "--sidebar-width": isSidebarCollapsed ? "0px" : `${sidebarWidth}px` } as CSSProperties;
 
   return <div className={`viewer-shell ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isResizingSidebar ? "sidebar-resizing" : ""}`} style={shellStyle}>
@@ -175,7 +186,7 @@ export default function App() {
         {isLoadingFile && <div className="loading-line">正在读取文件…</div>}
         {payload && <>
           <div className="data-summary"><span>{pageDescription} 条匹配记录</span><span>共 {payload.stats.total} 行 · 有效 {payload.stats.valid} · 错误 {payload.stats.failed}</span></div>
-          <JsonTable rows={payload.rows} columns={visibleColumns} onOpenRow={setSelectedRow} />
+          <JsonTable rows={payload.rows} columns={visibleColumns} onOpenRow={openRow} />
           <nav className="pagination" aria-label="分页">
             <button type="button" className="button" disabled={payload.pagination.page <= 1 || isLoadingFile} onClick={() => changePage(payload.pagination.page - 1)}>上一页</button>
             <span>第 {payload.pagination.page} / {payload.pagination.totalPages} 页</span>
@@ -187,6 +198,6 @@ export default function App() {
     {!isSidebarCollapsed && <div className="sidebar-resizer" role="separator" aria-label="调整文件栏宽度" aria-orientation="vertical" onPointerDown={(event) => { event.preventDefault(); setIsResizingSidebar(true); }} />}
     <FileTree rootName={rootName} rootNodes={rootNodes} childNodes={childNodes} loadingPaths={loadingPaths} selectedPath={selectedPath} onToggleDirectory={toggleDirectory} onSelectFile={openFile} />
     <button type="button" className="sidebar-toggle" onClick={() => setIsSidebarCollapsed((previous) => !previous)} aria-label={isSidebarCollapsed ? "展开文件栏" : "收起文件栏"} title={isSidebarCollapsed ? "展开文件栏" : "收起文件栏"}>{isSidebarCollapsed ? "‹" : "›"}</button>
-    {selectedRow && <div className="json-dialog-backdrop" role="presentation" onMouseDown={() => setSelectedRow(null)}><section className="json-dialog" role="dialog" aria-modal="true" aria-label={`第 ${selectedRow.lineNumber} 行 JSON`} onMouseDown={(event) => event.stopPropagation()}><header><div><span className="dialog-kicker">第 {selectedRow.lineNumber} 行</span><h2>{selectedRow.error ? "无法解析此行 JSON" : "完整 JSON"}</h2></div><div className="dialog-header-actions"><label className="structural-aid-control">结构辅助<select value={structuralAid} onChange={(event) => setStructuralAid(event.target.value as "off" | "compact" | "full")} aria-label="结构辅助"><option value="off">关闭</option><option value="compact">简洁</option><option value="full">完整</option></select></label><button type="button" className="dialog-close" onClick={() => setSelectedRow(null)} aria-label="关闭全屏"><CloseIcon /></button></div></header><div className="json-dialog-content">{selectedRow.error ? <><p className="dialog-error">{selectedRow.error}</p><pre>{selectedRow.raw}</pre></> : <JsonTree t={(key, params) => t("zh", key, params)} data={selectedRow.parsed} defaultExpandedDepth={2} structuralAid={structuralAid} />}</div></section></div>}
+    {selectedRow && <div className="json-dialog-backdrop" role="presentation" onMouseDown={() => setSelectedRow(null)}><section className="json-dialog" role="dialog" aria-modal="true" aria-label={`第 ${selectedRow.lineNumber} 行 JSON`} onMouseDown={(event) => event.stopPropagation()}><header><div><span className="dialog-kicker">第 {selectedRow.lineNumber} 行</span><h2>{selectedRow.error ? "无法解析此行 JSON" : "完整 JSON"}</h2></div><div className="dialog-header-actions">{!selectedRow.error && <button type="button" className="button dialog-tree-action" onClick={expandAllTreeNodes}>展开全部</button>}<label className="structural-aid-control">结构辅助<select value={structuralAid} onChange={(event) => setStructuralAid(event.target.value as "off" | "compact" | "full")} aria-label="结构辅助"><option value="off">关闭</option><option value="compact">简洁</option><option value="full">完整</option></select></label><button type="button" className="dialog-close" onClick={() => setSelectedRow(null)} aria-label="关闭全屏"><CloseIcon /></button></div></header><div className="json-dialog-content">{selectedRow.error ? <><p className="dialog-error">{selectedRow.error}</p><pre>{selectedRow.raw}</pre></> : <JsonTree t={(key, params) => t("zh", key, params)} data={selectedRow.parsed} defaultExpandedDepth={2} controlVersion={treeControlVersion} controlMode={treeControlMode} structuralAid={structuralAid} />}</div></section></div>}
   </div>;
 }

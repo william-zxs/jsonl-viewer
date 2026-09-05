@@ -43,3 +43,4 @@ body.modal-open { overflow: hidden; }
 .dialog-header-actions { display: flex; align-items: center; gap: 10px; }
 .structural-aid-control { display: flex; align-items: center; gap: 6px; color: #6b7280; font-size: 12px; }
 .structural-aid-control select { height: 30px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 7px; color: #374151; background: #fff; font-size: 12px; }
+.dialog-tree-action { min-height: 30px; padding: 0 9px; font-size: 12px; }

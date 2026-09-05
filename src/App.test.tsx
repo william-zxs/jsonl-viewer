@@ -7,7 +7,7 @@ const fileResponse = {
   file: { path: "session.jsonl", name: "session.jsonl", size: 1024, updatedAt: "2026-01-01T00:00:00.000Z" },
   columns: ["request", "status", "message"],
   columnsByDepth: { "1": ["request", "status", "message"], "2": ["request.id"] },
-  rows: [{ lineNumber: 1, raw: '{"request":{"id":"abc"},"status":200,"message":"ok"}', parsed: { request: { id: "abc" }, status: 200, message: "ok" }, error: null }],
+  rows: [{ lineNumber: 1, raw: '{"request":{"id":"abc","details":{"name":"expanded"}},"status":200,"message":"ok"}', parsed: { request: { id: "abc", details: { name: "expanded" } }, status: 200, message: "ok" }, error: null }],
   pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
   stats: { total: 1, valid: 1, failed: 0 }
 };
@@ -27,7 +27,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /session\.jsonl/i }));
     await waitFor(() => expect(screen.getByText("message")).toBeInTheDocument());
     expect(screen.getByText("ok")).toBeInTheDocument();
-    expect(screen.getByText("{1}")).toBeInTheDocument();
+    expect(screen.getByText("{2}")).toBeInTheDocument();
   });
 
   it("可添加嵌套字段并全屏查看一行 JSON", async () => {
@@ -42,6 +42,9 @@ describe("App", () => {
     expect(screen.getByText("abc")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "全屏查看第 1 行" }));
     expect(screen.getByRole("dialog", { name: "第 1 行 JSON" })).toBeInTheDocument();
+    expect(screen.queryByText('"expanded"')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "展开全部" }));
+    await waitFor(() => expect(screen.getByText('"expanded"')).toBeInTheDocument());
     expect(screen.getByRole("combobox", { name: "结构辅助" })).toHaveValue("compact");
     fireEvent.change(screen.getByRole("combobox", { name: "结构辅助" }), { target: { value: "full" } });
     expect(screen.getByRole("combobox", { name: "结构辅助" })).toHaveValue("full");
