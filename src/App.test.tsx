@@ -42,6 +42,9 @@ describe("App", () => {
     expect(screen.getByText("abc")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "全屏查看第 1 行" }));
     expect(screen.getByRole("dialog", { name: "第 1 行 JSON" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "结构辅助" })).toHaveValue("compact");
+    fireEvent.change(screen.getByRole("combobox", { name: "结构辅助" }), { target: { value: "full" } });
+    expect(screen.getByRole("combobox", { name: "结构辅助" })).toHaveValue("full");
   });
 
   it("默认显示第一层字段，可切换层级并收起文件栏", async () => {

@@ -6,10 +6,12 @@ type JsonTreeProps = {
   t: TranslateFn;
   data: unknown;
   name?: string;
+  arrayIndex?: number;
   depth?: number;
   defaultExpandedDepth?: number;
   controlVersion?: number;
   controlMode?: "expand" | "collapse" | "reset" | null;
+  structuralAid?: "off" | "compact" | "full";
 };
 
 function fallbackCopyText(text: string): boolean {
@@ -80,10 +82,12 @@ export default function JsonTree({
   t,
   data,
   name,
+  arrayIndex,
   depth = 0,
   defaultExpandedDepth = 1,
   controlVersion = 0,
-  controlMode = null
+  controlMode = null,
+  structuralAid = "compact"
 }: JsonTreeProps) {
   const safeDepth = Math.min(depth, 5);
   const lineDepthClass = `line-depth-${safeDepth}`;
@@ -142,7 +146,9 @@ export default function JsonTree({
 
   if (!isObject) {
     return <div className={`tree-line ${lineDepthClass}`} style={lineStyle} data-depth={depth}>
-      {name !== undefined && <span className="tree-key">{name}: </span>}
+      {arrayIndex !== undefined
+        ? structuralAid !== "off" && <span className="array-index" aria-label={`数组下标 ${arrayIndex}`}>#{arrayIndex}</span>
+        : name !== undefined && <span className="tree-key">{name}: </span>}
       <span className={typeClass(data)}>{formatPrimitive(data)}</span>
     </div>;
   }
@@ -188,7 +194,9 @@ export default function JsonTree({
           {depth}
         </button>
         <div className="tree-head-main">
-          {name !== undefined && <span className="tree-key">{name}: </span>}
+          {arrayIndex !== undefined
+            ? structuralAid !== "off" && <span className="array-index" aria-label={`数组下标 ${arrayIndex}`}>#{arrayIndex}</span>
+            : name !== undefined && <span className="tree-key">{name}: </span>}
           {!isOpen && <span className="tree-preview">{preview}</span>}
           {isOpen && <span className="tree-bracket">{openSymbol}</span>}
         </div>
@@ -212,10 +220,12 @@ export default function JsonTree({
               t={t}
               data={value}
               name={key}
+              arrayIndex={isArray ? Number(key) : undefined}
               depth={depth + 1}
               defaultExpandedDepth={defaultExpandedDepth}
               controlVersion={controlVersion}
               controlMode={controlMode}
+              structuralAid={structuralAid}
             />
           ))}
         </div>
@@ -224,7 +234,7 @@ export default function JsonTree({
       {isOpen && (
         <div className={`tree-line ${lineDepthClass} tree-block-tail`} style={lineStyle} data-depth={depth}>
           <span className="tree-bracket">{closeSymbol}</span>
-          {name !== undefined && <span className="tree-end-hint">end: {name}</span>}
+          {name !== undefined && structuralAid !== "off" && <span className={`tree-end-hint ${structuralAid === "full" ? "is-always-visible" : ""}`} aria-hidden="true"><span>↳</span> 结束：{name}</span>}
         </div>
       )}
     </div>
