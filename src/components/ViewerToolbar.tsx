@@ -6,9 +6,11 @@ type ViewerToolbarProps = {
   onApply: () => void;
   onReset: () => void;
   onOpenColumns: () => void;
+  displayDepth: number;
+  onDisplayDepthChange: (depth: number) => void;
 };
 
-export default function ViewerToolbar({ draft, onChange, onApply, onReset, onOpenColumns }: ViewerToolbarProps) {
+export default function ViewerToolbar({ draft, onChange, onApply, onReset, onOpenColumns, displayDepth, onDisplayDepthChange }: ViewerToolbarProps) {
   const update = (key: keyof QueryFilters, value: string) => onChange({ ...draft, [key]: value, page: 1 });
   return <div className="viewer-toolbar">
     <label className="search-control">
@@ -24,6 +26,9 @@ export default function ViewerToolbar({ draft, onChange, onApply, onReset, onOpe
     </div>
     <select className="status-select" value={draft.status} onChange={(event) => update("status", event.target.value)} aria-label="解析状态">
       <option value="all">全部记录</option><option value="valid">仅有效 JSON</option><option value="error">仅解析错误</option>
+    </select>
+    <select className="depth-select" value={displayDepth} onChange={(event) => onDisplayDepthChange(Number(event.target.value))} aria-label="显示层级">
+      <option value="1">第 1 层</option><option value="2">第 2 层</option><option value="3">第 3 层</option><option value="4">第 4 层</option>
     </select>
     <button type="button" className="button button-primary" onClick={onApply}>应用</button>
     <button type="button" className="button" onClick={onOpenColumns}>显示字段</button>

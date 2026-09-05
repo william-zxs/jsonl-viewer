@@ -13,6 +13,7 @@ const distRoot = join(projectRoot, "dist");
 const JSONL_EXTENSIONS = new Set([".jsonl", ".jsonlines", ".ndjson"]);
 const DEFAULT_PAGE_SIZE = 100;
 const MAX_PAGE_SIZE = 500;
+const MAX_COLUMN_DEPTH = 4;
 
 function printUsage() {
   console.log(`\nUsage: jsonl-viewer <directory> [options]\n\nOptions:\n  --host <host>    Bind address (default: 127.0.0.1)\n  --port <port>    Port (default: 8400)\n  --token <token>  Require this token for JSONL data API requests\n  --help           Show this help\n\nExample:\n  jsonl-viewer /var/log/agent --host 0.0.0.0 --port 8400 --token change-me\n`);
@@ -65,6 +66,17 @@ function getPathValue(value, path) {
     if (current === null || current === undefined || typeof current !== "object") return undefined;
     return current[segment];
   }, value);
+}
+
+function collectColumnPaths(value, depth, prefix, counts) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || depth > MAX_COLUMN_DEPTH) return;
+  for (const [key, child] of Object.entries(value)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    const levelCounts = counts.get(depth) || new Map();
+    levelCounts.set(path, (levelCounts.get(path) || 0) + 1);
+    counts.set(depth, levelCounts);
+    collectColumnPaths(child, depth + 1, path, counts);
+  }
 }
 
 function matchesFieldFilter(value, operator, expected) {
@@ -143,7 +155,7 @@ async function inspectFile(root, relativePath, query) {
   const value = query.get("value") || "";
   const offset = (page - 1) * pageSize;
   const rows = [];
-  const fieldCounts = new Map();
+  const columnCounts = new Map();
   let lineNumber = 0;
   let total = 0;
   let valid = 0;
@@ -160,11 +172,7 @@ async function inspectFile(root, relativePath, query) {
     try {
       parsed = JSON.parse(rawLine);
       valid += 1;
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        for (const key of Object.keys(parsed)) {
-          fieldCounts.set(key, (fieldCounts.get(key) || 0) + 1);
-        }
-      }
+      collectColumnPaths(parsed, 1, "", columnCounts);
     } catch (parseError) {
       error = compactError(parseError);
       failed += 1;
@@ -178,13 +186,16 @@ async function inspectFile(root, relativePath, query) {
       rows.push({ lineNumber, raw: rawLine, parsed, error });
     }
   }
-  const columns = [...fieldCounts.entries()]
-    .toSorted((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-    .map(([name]) => name);
+  const columnsByDepth = Object.fromEntries([...columnCounts.entries()].map(([depth, counts]) => [
+    depth,
+    [...counts.entries()].toSorted((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).map(([name]) => name)
+  ]));
+  const columns = columnsByDepth[1] || [];
   return {
     file: { path: relativePath, name: relativePath.split("/").at(-1), size: fileInfo.size, updatedAt: fileInfo.mtime.toISOString() },
     rows,
     columns,
+    columnsByDepth,
     pagination: { page, pageSize, total: matched, totalPages: Math.max(1, Math.ceil(matched / pageSize)) },
     stats: { total, valid, failed }
   };

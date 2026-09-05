@@ -15,6 +15,7 @@ export type FilePayload = {
   file: { path: string; name: string; size: number; updatedAt: string };
   rows: ViewerRow[];
   columns: string[];
+  columnsByDepth: Record<string, string[]>;
   pagination: { page: number; pageSize: number; total: number; totalPages: number };
   stats: { total: number; valid: number; failed: number };
 };

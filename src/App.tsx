@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import ColumnPicker from "./components/ColumnPicker";
 import FileTree from "./components/FileTree";
 import JsonTable from "./components/JsonTable";
@@ -9,6 +10,8 @@ import { fetchFile, fetchTree, type FileNode, type FilePayload, type QueryFilter
 
 const PAGE_SIZE = 100;
 const EMPTY_FILTERS: QueryFilters = { page: 1, pageSize: PAGE_SIZE, search: "", status: "all", field: "", operator: "contains", value: "" };
+const MIN_SIDEBAR_WIDTH = 220;
+const MAX_SIDEBAR_WIDTH = 480;
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -30,10 +33,14 @@ export default function App() {
   const [appliedFilters, setAppliedFilters] = useState<QueryFilters>(EMPTY_FILTERS);
   const [payload, setPayload] = useState<FilePayload | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [displayDepth, setDisplayDepth] = useState(1);
   const [showColumns, setShowColumns] = useState(false);
   const [selectedRow, setSelectedRow] = useState<ViewerRow | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [error, setError] = useState("");
+  const [sidebarWidth, setSidebarWidth] = useState(282);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const loadRoot = useCallback(async () => {
     try {
@@ -81,7 +88,7 @@ export default function App() {
       .then((nextPayload) => {
         if (controller.signal.aborted) return;
         setPayload(nextPayload);
-        setVisibleColumns((previous) => previous.length ? previous : nextPayload.columns.slice(0, 6));
+        setVisibleColumns((previous) => previous.length ? previous : (nextPayload.columnsByDepth["1"] || nextPayload.columns).slice(0, 6));
       })
       .catch((requestError) => {
         if (!controller.signal.aborted) setError(requestError instanceof Error ? requestError.message : "无法读取 JSONL 文件");
@@ -103,6 +110,21 @@ export default function App() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
 
+  useEffect(() => {
+    if (!isResizingSidebar) return;
+    const updateWidth = (event: PointerEvent) => {
+      const maxWidth = Math.min(MAX_SIDEBAR_WIDTH, window.innerWidth * 0.5);
+      setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, Math.min(maxWidth, window.innerWidth - event.clientX)));
+    };
+    const finishResize = () => setIsResizingSidebar(false);
+    window.addEventListener("pointermove", updateWidth);
+    window.addEventListener("pointerup", finishResize, { once: true });
+    return () => {
+      window.removeEventListener("pointermove", updateWidth);
+      window.removeEventListener("pointerup", finishResize);
+    };
+  }, [isResizingSidebar]);
+
   const pageDescription = useMemo(() => {
     if (!payload) return "";
     const { page, pageSize, total } = payload.pagination;
@@ -117,6 +139,7 @@ export default function App() {
     setSelectedRow(null);
     setShowColumns(false);
     setVisibleColumns([]);
+    setDisplayDepth(1);
     setDraftFilters(EMPTY_FILTERS);
     setAppliedFilters(EMPTY_FILTERS);
   };
@@ -128,8 +151,14 @@ export default function App() {
     setAppliedFilters(next);
     setDraftFilters((previous) => ({ ...previous, page }));
   };
+  const changeDisplayDepth = (depth: number) => {
+    setDisplayDepth(depth);
+    setVisibleColumns((payload?.columnsByDepth[String(depth)] || []).slice(0, 6));
+    setShowColumns(false);
+  };
+  const shellStyle = { "--sidebar-width": isSidebarCollapsed ? "0px" : `${sidebarWidth}px` } as CSSProperties;
 
-  return <div className="viewer-shell">
+  return <div className={`viewer-shell ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isResizingSidebar ? "sidebar-resizing" : ""}`} style={shellStyle}>
     <main className="viewer-main">
       <header className="app-header">
         <div className="brand"><span className="brand-mark">{`{}`}</span><span>JSONL Viewer</span></div>
@@ -140,7 +169,7 @@ export default function App() {
       </header>
 
       {selectedPath ? <>
-        <div className="toolbar-wrap"><ViewerToolbar draft={draftFilters} onChange={setDraftFilters} onApply={applyFilters} onReset={resetFilters} onOpenColumns={() => setShowColumns((previous) => !previous)} />{showColumns && payload && <ColumnPicker columns={payload.columns} visibleColumns={visibleColumns} onChange={setVisibleColumns} onClose={() => setShowColumns(false)} />}</div>
+        <div className="toolbar-wrap"><ViewerToolbar draft={draftFilters} onChange={setDraftFilters} onApply={applyFilters} onReset={resetFilters} onOpenColumns={() => setShowColumns((previous) => !previous)} displayDepth={displayDepth} onDisplayDepthChange={changeDisplayDepth} />{showColumns && payload && <ColumnPicker columns={payload.columnsByDepth[String(displayDepth)] || []} visibleColumns={visibleColumns} onChange={setVisibleColumns} onClose={() => setShowColumns(false)} />}</div>
         {error && <div className="notice notice-error">{error}</div>}
         {isLoadingFile && <div className="loading-line">正在读取文件…</div>}
         {payload && <>
@@ -154,7 +183,9 @@ export default function App() {
         </>}
       </> : <div className="welcome-state"><div className="welcome-symbol">{`{ }`}</div><h1>选择一个 JSONL 文件</h1><p>目录中的 JSONL 文件会显示在右侧。每一行对应一条 JSON 记录，可筛选字段并全屏查看详情。</p></div>}
     </main>
+    {!isSidebarCollapsed && <div className="sidebar-resizer" role="separator" aria-label="调整文件栏宽度" aria-orientation="vertical" onPointerDown={(event) => { event.preventDefault(); setIsResizingSidebar(true); }} />}
     <FileTree rootName={rootName} rootNodes={rootNodes} childNodes={childNodes} loadingPaths={loadingPaths} selectedPath={selectedPath} onToggleDirectory={toggleDirectory} onSelectFile={openFile} />
+    <button type="button" className="sidebar-toggle" onClick={() => setIsSidebarCollapsed((previous) => !previous)} aria-label={isSidebarCollapsed ? "展开文件栏" : "收起文件栏"} title={isSidebarCollapsed ? "展开文件栏" : "收起文件栏"}>{isSidebarCollapsed ? "‹" : "›"}</button>
     {selectedRow && <div className="json-dialog-backdrop" role="presentation" onMouseDown={() => setSelectedRow(null)}><section className="json-dialog" role="dialog" aria-modal="true" aria-label={`第 ${selectedRow.lineNumber} 行 JSON`} onMouseDown={(event) => event.stopPropagation()}><header><div><span className="dialog-kicker">第 {selectedRow.lineNumber} 行</span><h2>{selectedRow.error ? "无法解析此行 JSON" : "完整 JSON"}</h2></div><button type="button" className="dialog-close" onClick={() => setSelectedRow(null)} aria-label="关闭全屏"><CloseIcon /></button></header><div className="json-dialog-content">{selectedRow.error ? <><p className="dialog-error">{selectedRow.error}</p><pre>{selectedRow.raw}</pre></> : <JsonTree t={(key, params) => t("zh", key, params)} data={selectedRow.parsed} defaultExpandedDepth={2} />}</div></section></div>}
   </div>;
 }

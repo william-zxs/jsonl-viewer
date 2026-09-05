@@ -6,6 +6,7 @@ const treeResponse = { rootName: "logs", path: "", nodes: [{ name: "agent", path
 const fileResponse = {
   file: { path: "session.jsonl", name: "session.jsonl", size: 1024, updatedAt: "2026-01-01T00:00:00.000Z" },
   columns: ["request", "status", "message"],
+  columnsByDepth: { "1": ["request", "status", "message"], "2": ["request.id"] },
   rows: [{ lineNumber: 1, raw: '{"request":{"id":"abc"},"status":200,"message":"ok"}', parsed: { request: { id: "abc" }, status: 200, message: "ok" }, error: null }],
   pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
   stats: { total: 1, valid: 1, failed: 0 }
@@ -41,5 +42,17 @@ describe("App", () => {
     expect(screen.getByText("abc")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "全屏查看第 1 行" }));
     expect(screen.getByRole("dialog", { name: "第 1 行 JSON" })).toBeInTheDocument();
+  });
+
+  it("默认显示第一层字段，可切换层级并收起文件栏", async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /session\.jsonl/i }));
+    await screen.findByText("message");
+    expect(screen.getByText("request")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "显示层级" }), { target: { value: "2" } });
+    expect(screen.getByText("request.id")).toBeInTheDocument();
+    expect(screen.getByText("abc")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "收起文件栏" }));
+    expect(screen.getByRole("button", { name: "展开文件栏" })).toBeInTheDocument();
   });
 });
